@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>統合経営システム - 人事労務ルーム</title>
+    <style>
+        body { background: #121214; color: #e0e0e6; font-family: monospace; padding: 20px; line-height: 1.6; }
+        h1, h2, h3 { color: #eab308; border-bottom: 1px solid #333; padding-bottom: 5px; margin-top: 15px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .card { background: #1a1a24; border: 1px solid #2d2d3d; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+        .btn-group { margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap; }
+        button { background: #eab308; color: #000; border: none; padding: 12px 18px; font-weight: bold; border-radius: 4px; cursor: pointer; transition: 0.1s; }
+        button:hover { background: #fde047; }
+        button:active { background: #fff; }
+        .nav-link { background: #22c55e; color: black; padding: 12px 24px; text-decoration: none; font-weight: bold; border-radius: 4px; display: inline-block; margin-bottom: 20px; }
+        .sub-text { font-size: 11px; color: #aaa; display: block; margin-top: 2px; }
+    </style>
+    <script>
+        // 📥 URLからすべての経営データを読み込む
+        let params = new URLSearchParams(window.location.search);
+        let cash = params.get('cash') ? parseInt(params.get('cash')) : 2000000;
+        let loan = params.get('loan') ? parseInt(params.get('loan')) : 0;
+        let deposit = params.get('deposit') ? parseInt(params.get('deposit')) : 0;
+        
+        let stockPhone = params.get('sPhone') ? parseInt(params.get('sPhone')) : 0;
+        let stockCar = params.get('sCar') ? parseInt(params.get('sCar')) : 0;
+        let stockRobot = params.get('sRobot') ? parseInt(params.get('sRobot')) : 0;
+        let stockRocket = params.get('sRocket') ? parseInt(params.get('sRocket')) : 0;
+        
+        // 👥 専門職種ごとの人数データ（新システム）
+        let staffSales = params.get('sSales') ? parseInt(params.get('sSales')) : 1; // 最初は営業1人
+        let staffEng = params.get('sEng') ? parseInt(params.get('sEng')) : 0;
+        let staffSci = params.get('sSci') ? parseInt(params.get('sSci')) : 0;
+        
+        let term = params.get('term') ? parseInt(params.get('term')) : 1;
+        let newsText = params.get('news') ? params.get('news') : "";
+        let priceMultiplier = params.get('mult') ? parseFloat(params.get('mult')) : 1.0;
+
+        function updateUI() {
+            document.getElementById("lbl-cash").innerText = cash.toLocaleString();
+            document.getElementById("lbl-staff-sales").innerText = staffSales;
+            document.getElementById("lbl-staff-eng").innerText = staffEng;
+            document.getElementById("lbl-staff-sci").innerText = staffSci;
+            
+            // 🏢 CEO室へ戻るリンクのURLに、3つの専門職の人数をのせる
+            document.getElementById("lnk-to-ceo").href = `ceo_v2.html?cash=${cash}&loan=${loan}&deposit=${deposit}&sPhone=${stockPhone}&sCar=${stockCar}&sRobot=${stockRobot}&sRocket=${stockRocket}&sSales=${staffSales}&sEng=${staffEng}&sSci=${staffSci}&term=${term}&news=${encodeURIComponent(newsText)}&mult=${priceMultiplier}`;
+        }
+
+        // 💼 営業の採用
+        function hireSales() {
+            if (cash >= 100000) { cash -= 100000; staffSales++; updateUI(); }
+            else { alert("現金が足りません！"); }
+        }
+
+        // 🛠️ 製造エンジニアの採用
+        function hireEng() {
+            if (cash >= 150000) { cash -= 150000; staffEng++; updateUI(); }
+            else { alert("現金が足りません！"); }
+        }
+
+        // 🧠 AI科学者の採用
+        function hireSci() {
+            if (cash >= 500000) { cash -= 500000; staffSci++; updateUI(); }
+            else { alert("現金が足りません！"); }
+        }
+    </script>
+</head>
+<body onload="updateUI()">
+
+    <h1>👥 人事労務・専門職採用本部</h1>
+    
+    <a id="lnk-to-ceo" class="nav-link" href="ceo_v2.html">🏢 CEO室（総合統括本部）に戻る</a>
+
+    <div class="card" style="background: #111;">
+        <h3>📊 現在の社内総労働力スタック</h3>
+        <p>求人費用キャッシュ: <strong id="lbl-cash" style="color:#00ff66;">2,000,000</strong> 円</p>
+        <p>💼 営業スタッフ: <strong id="lbl-staff-sales" style="color:#ffea00;">1</strong> 名 | 🛠️ 製造エンジニア: <strong id="lbl-staff-eng" style="color:#ffea00;">0</strong> 名 | 🧠 AI科学者: <strong id="lbl-staff-sci" style="color:#ffea00;">0</strong> 名</p>
+    </div>
+
+    <div class="grid">
+        <!-- 💼 営業スタッフ採用 -->
+        <div class="card" style="border-left: 5px solid #eab308;">
+            <h2>💼 営業マーケティング部門</h2>
+            <p>製品を市場に売り捌くプロ。増やすと毎月の販売上限数がアップします。</p>
+            <span class="sub-text">・採用コスト: 100,000円</span>
+            <span class="sub-text">・固定人件費: 月々 150,000円 / 人</span>
+            <div class="btn-group">
+                <button onclick="hireSales()">営業スタッフを採用（連打可）</button>
+            </div>
+        </div>
+
+        <!-- 🛠️ 製造エンジニア採用 -->
+        <div class="card" style="border-left: 5px solid #eab308;">
+            <h2>🛠️ 製造・組み立てエンジニア部門</h2>
+            <p>工場を動かす技術者。スマホ、自動車、ロボットの製造に必要です。</p>
+            <span class="sub-text">・採用コスト: 150,000円</span>
+            <span class="sub-text">・固定人件費: 月々 250,000円 / 人</span>
+            <div class="btn-group">
+                <button onclick="hireEng()">製造エンジニアを採用（連打可）</button>
+            </div>
+        </div>
+
+        <!-- 🧠 AI科学者採用 -->
+        <div class="card" style="border-left: 5px solid #eab308;">
+            <h2>🧠 最先端AI・宇宙科学者部門</h2>
+            <p>超高度な頭脳。AIロボットや宇宙ロケットの開発に必須となります。</p>
+            <span class="sub-text">・採用コスト: 500,000円</span>
+            <span class="sub-text">・固定人件費: 月々 600,000円 / 人</span>
+            <div class="btn-group">
+                <button onclick="hireSci()">AI科学者を採用（連打可）</button>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
