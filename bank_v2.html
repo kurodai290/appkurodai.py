@@ -37,7 +37,7 @@
             document.getElementById("lbl-deposit").innerText = deposit.toLocaleString();
             
             // 🏢 CEO室へ戻るリンクのURLに、最新の資金データを上書きする
-            document.getElementById("lnk-to-ceo").href = `index_v2.html?cash=${cash}&loan=${loan}&deposit=${deposit}&sPhone=${stockPhone}&sCar=${stockCar}&staff=${staff}&term=${term}&news=${encodeURIComponent(newsText)}&mult=${priceMultiplier}`;
+            document.getElementById("lnk-to-ceo").href = `index.html?cash=${cash}&loan=${loan}&deposit=${deposit}&sPhone=${stockPhone}&sCar=${stockCar}&staff=${staff}&term=${term}&news=${encodeURIComponent(newsText)}&mult=${priceMultiplier}`;
         }
 
         // 🏦 銀行コマンド：融資を受ける
