@@ -41,7 +41,7 @@
             document.getElementById("lbl-staff-sci").innerText = staffSci;
             
             // 🏢 全て漏らさずデータをCEO室に渡します
-            document.getElementById("lnk-to-ceo").href = `ceo_v2.html?cash=${cash}&loan=${loan}&deposit=${deposit}&sphone=${stockPhone}&scar=${stockCar}&srobot=${stockRobot}&srocket=${stockRocket}&ssales=${staffSales}&seng=${staffEng}&ssci=${staffSci}&term=${term}&news=${encodeURIComponent(newsText)}&mult=${priceMultiplier}`;
+            document.getElementById("lnk-to-ceo").href = `index.html?cash=${cash}&loan=${loan}&deposit=${deposit}&sphone=${stockPhone}&scar=${stockCar}&srobot=${stockRobot}&srocket=${stockRocket}&ssales=${staffSales}&seng=${staffEng}&ssci=${staffSci}&term=${term}&news=${encodeURIComponent(newsText)}&mult=${priceMultiplier}`;
         }
 
         function hireSales() { if (cash >= 100000) { cash -= 100000; staffSales++; updateUI(); } else { alert("資金不足です！"); } }
