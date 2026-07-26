@@ -1,25 +1,23 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>統合経営システム - CEO室</title>
+    <title>統合経営システム - 製造・事業部ルーム</title>
     <style>
-        body { background: #121214; color: #e0e0e6; font-family: monospace; padding: 20px; line-height: 1.6; }
-        h1, h2, h3 { color: #00ff66; border-bottom: 1px solid #333; padding-bottom: 5px; margin-top: 15px; }
+        body { background: #121214; color: #e0e0e6; font-family: 'Courier New', Courier, monospace; padding: 20px; line-height: 1.6; }
+        h1, h2, h3 { color: #a855f7; border-bottom: 1px solid #333; padding-bottom: 5px; margin-top: 15px; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .card { background: #1a1a24; border: 1px solid #2d2d3d; padding: 15px; border-radius: 5px; }
-        .btn-group { margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap; }
-        
-        .nav-btn { color: white; padding: 12px 20px; text-decoration: none; font-weight: bold; border-radius: 4px; display: inline-block; font-size: 14px; text-align: center; }
-        .btn-bank { background: #3b82f6; }
-        .btn-business { background: #a855f7; }
-        .btn-hr { background: #eab308; color: #000; }
-        
-        button.danger { background: #ef4444; color: #fff; border: none; padding: 15px 30px; font-weight: bold; border-radius: 4px; cursor: pointer; font-size: 16px; width: 100%; }
-        button.danger:hover { background: #f87171; }
-        
-        .log-box { background: #000; color: #00ff66; padding: 10px; height: 130px; overflow-y: scroll; font-size: 13px; border: 1px solid #333; }
-        .news-box { background: #ffea00; color: #000; padding: 12px; border-radius: 4px; font-weight: bold; margin-bottom: 20px; border-left: 5px solid #ffaa00; font-size: 15px; }
+        .btn-group { margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap; }
+        button { background: #a855f7; color: #fff; border: none; padding: 12px 18px; font-weight: bold; border-radius: 4px; cursor: pointer; transition: 0.1s; }
+        button:hover { background: #c084fc; }
+        button:active { background: #e9d5ff; color: #000; }
+        .nav-link { background: #22c55e; color: black; padding: 12px 24px; text-decoration: none; font-weight: bold; border-radius: 4px; display: inline-block; margin-bottom: 20px; }
+        .nav-link:hover { background: #4ade80; }
+        .sub-text { font-size: 11px; color: #aaa; display: block; margin-top: 2px; }
+        .error-text { color: #ef4444; font-size: 11px; font-weight: bold; display: block; margin-top: 2px; }
+        .success-text { color: #22c55e; font-size: 11px; font-weight: bold; display: block; margin-top: 2px; }
     </style>
     <script>
         let params = new URLSearchParams(window.location.search);
@@ -27,142 +25,101 @@
         let loan = params.get('loan') ? parseInt(params.get('loan')) : 0;
         let deposit = params.get('deposit') ? parseInt(params.get('deposit')) : 0;
         
-        // 在庫データの引き継ぎ（4大事業に対応）
-        let stockPhone = params.get('sPhone') ? parseInt(params.get('sPhone')) : 0;
-        let stockCar = params.get('sCar') ? parseInt(params.get('sCar')) : 0;
-        let stockRobot = params.get('sRobot') ? parseInt(params.get('sRobot')) : 0; // AIロボット
-        let stockRocket = params.get('sRocket') ? parseInt(params.get('sRocket')) : 0; // ロケット
+        let stockPhone = params.get('sphone') ? parseInt(params.get('sphone')) : 0;
+        let stockCar = params.get('scar') ? parseInt(params.get('scar')) : 0;
+        let stockRobot = params.get('srobot') ? parseInt(params.get('srobot')) : 0;
+        let stockRocket = params.get('srocket') ? parseInt(params.get('srocket')) : 0;
         
-        let staff = params.get('staff') ? parseInt(params.get('staff')) : 1;
+        let staffSales = params.get('ssales') ? parseInt(params.get('ssales')) : 1;
+        let staffEng = params.get('seng') ? parseInt(params.get('seng')) : 0;
+        let staffSci = params.get('ssci') ? parseInt(params.get('ssci')) : 0;
+        
         let term = params.get('term') ? parseInt(params.get('term')) : 1;
-        
-        let newsText = params.get('news') ? params.get('news') : "安定した経済環境です。さらなる事業拡大を目指しましょう！";
+        let newsText = params.get('news') ? params.get('news') : "";
         let priceMultiplier = params.get('mult') ? parseFloat(params.get('mult')) : 1.0;
 
         function updateUI() {
-            document.getElementById("lbl-term").innerText = term;
             document.getElementById("lbl-cash").innerText = cash.toLocaleString();
-            document.getElementById("lbl-loan").innerText = loan.toLocaleString();
-            document.getElementById("lbl-deposit").innerText = deposit.toLocaleString();
-            document.getElementById("lbl-staff").innerText = staff;
+            document.getElementById("lbl-staff-eng").innerText = staffEng;
+            document.getElementById("lbl-staff-sci").innerText = staffSci;
             
             document.getElementById("lbl-stock-phone").innerText = stockPhone;
             document.getElementById("lbl-stock-car").innerText = stockCar;
             document.getElementById("lbl-stock-robot").innerText = stockRobot;
             document.getElementById("lbl-stock-rocket").innerText = stockRocket;
             
-            document.getElementById("news-display").innerText = newsText;
-
-            // 他の部屋へのパスに必要な全データを上書き
-            let dataQuery = `?cash=${cash}&loan=${loan}&deposit=${deposit}&sPhone=${stockPhone}&sCar=${stockCar}&sRobot=${stockRobot}&sRocket=${stockRocket}&staff=${staff}&term=${term}&news=${encodeURIComponent(newsText)}&mult=${priceMultiplier}`;
-            
-            document.getElementById("lnk-bank").href = "bank_v2.html" + dataQuery;
-            document.getElementById("lnk-business").href = "business_v2.html" + dataQuery;
-            document.getElementById("lnk-hr").href = "hr_v2.html" + dataQuery;
+            // 🏢 【大修正】すべての変数を漏らさずCEO室に戻します
+            document.getElementById("lnk-to-ceo").href = `ceo_v2.html?cash=${cash}&loan=${loan}&deposit=${deposit}&sphone=${stockPhone}&scar=${stockCar}&srobot=${stockRobot}&srocket=${stockRocket}&ssales=${staffSales}&seng=${staffEng}&ssci=${staffSci}&term=${term}&news=${encodeURIComponent(newsText)}&mult=${priceMultiplier}`;
         }
 
-        function logAction(text) {
-            let logBox = document.getElementById("log");
-            if (logBox) { logBox.innerHTML += "<br>" + text; logBox.scrollTop = logBox.scrollHeight; }
+        function makePhone() {
+            if (staffEng >= 1) {
+                if (cash >= 30000) { cash -= 30000; stockPhone++; updateUI(); } 
+                else { alert("現金が足りません！"); }
+            } else { alert("エンジニアが足りません！"); }
         }
 
-        // ⏱ 決算を行い、時間を翌月に進める（4大事業の販売対応）
-        function nextMonth() {
-            logAction(`--- 【${term}ヶ月目 月次決算報告】 ---`);
-            
-            // 各製品の自動売却処理（在庫があれば売れる）
-            if (stockPhone > 0) { 
-                let p = Math.round(70000 * priceMultiplier); stockPhone--; cash += p; 
-                logAction(`[営業] スマホが売却されました。売上: +${p.toLocaleString()}円`); 
-            }
-            if (stockCar > 0) { 
-                let p = Math.round(2500000 * priceMultiplier); stockCar--; cash += p; 
-                logAction(`[営業] 電気自動車(EV)が売却されました。売上: +${p.toLocaleString()}円`); 
-            }
-            if (stockRobot > 0) { 
-                let p = Math.round(10000000 * priceMultiplier); stockRobot--; cash += p; 
-                logAction(`[営業] 🤖人型AIロボットが工場へ納品・売却されました。売上: +${p.toLocaleString()}円`); 
-            }
-            if (stockRocket > 0) { 
-                let p = Math.round(45000000 * priceMultiplier); stockRocket--; cash += p; 
-                logAction(`[営業] 🚀次世代ロケットが宇宙機関へ売却されました！売上: +${p.toLocaleString()}円`); 
-            }
+        function makeCar() {
+            if (staffEng >= 3) {
+                if (cash >= 1000000) { cash -= 1000000; stockCar++; updateUI(); } 
+                else { alert("現金が足りません！"); }
+            } else { alert("エンジニアが最低3名必要です！"); }
+        }
 
-            // 維持費（家賃15万 ＋ 社員の給料1人20万）
-            let salaryCost = staff * 200000;
-            let officeRent = 150000;
-            cash -= (salaryCost + officeRent);
-            logAction(`[財務] 固定経費引落：オフィス家賃 ${officeRent.toLocaleString()}円 / 人件費 ${salaryCost.toLocaleString()}円`);
+        function makeRobot() {
+            if (staffSci >= 2 && staffEng >= 4) {
+                if (cash >= 4000000) { cash -= 4000000; stockRobot++; updateUI(); } 
+                else { alert("現金が足りません！"); }
+            } else { alert("科学者2名＋エンジニア4名が必要です！"); }
+        }
 
-            // 銀行利息
-            cash = cash - Math.round(loan * 0.005) + Math.round(deposit * 0.002);
-
-            if (cash < 0) { 
-                alert("【資金ショート】手元金がマイナスになり破産しました。"); 
-                window.location.href = "ceo_v2.html"; 
-                return; 
-            }
-
-            // 📰 翌月のランダム経済ニュース
-            let rand = Math.random();
-            if (rand < 0.20) { 
-                newsText = "【経済ニュース：世界的なテクノロジー大バブル到来！】 AIロボットと宇宙ロケットの需要が爆発！売価が【1.5倍】に高騰中！"; 
-                priceMultiplier = 1.5; 
-            } else if (rand < 0.40) { 
-                newsText = "【経済ニュース：世界同時不況の波】 市場が大混乱。全製品の市場引き取り価格が【半分(0.5倍)】に大暴暴落！"; 
-                priceMultiplier = 0.5; 
-            } else if (rand < 0.55) {
-                newsText = "【経済ニュース：ハイテク減税政策が決定】 デジタルガジェットが大人気！スマホと自動車の売価が【1.2倍】にアップ！";
-                priceMultiplier = 1.2;
-            } else { 
-                newsText = "【経済ニュース：市場は極めて安定】 特記すべき経済変動はありません。安定した取引が続いています。"; 
-                priceMultiplier = 1.0; 
-            }
-
-            term++;
-            updateUI();
+        function makeRocket() {
+            if (staffSci >= 8 && staffEng >= 10) {
+                if (cash >= 15000000) { cash -= 15000000; stockRocket++; updateUI(); } 
+                else { alert("現金が足りません！"); }
+            } else { alert("科学者8名＋エンジニア10名が必要です！"); }
         }
     </script>
 </head>
 <body onload="updateUI()">
-
-    <h1>👔 CEO総合統括本部（4大事業拡大版）</h1>
+    <h1>🏭 専門製造ライン（4大事業完全大復活ライン）</h1>
+    <a id="lnk-to-ceo" class="nav-link" href="index_v2.html">🏢 CEO室（総合統括本部）に戻る</a>
     
-    <div class="news-box">
-        🚨 TOP NEWS ➔ <span id="news-display">読み込み中...</span>
-    </div>
-
-    <h3>📂 社内各部署への移動リンク</h3>
-    <div class="btn-group" style="margin-bottom: 25px;">
-        <a id="lnk-bank" class="nav-btn btn-bank" href="bank_v2.html">🏦 中央第一銀行（財務窓口）へ</a>
-        <a id="lnk-business" class="nav-btn btn-business" href="business_v2.html">🏭 製造・事業部ルームへ</a>
-        <a id="lnk-hr" class="nav-btn btn-hr" href="hr_v2.html">👥 人事労務・採用ルームへ</a>
+    <div class="card" style="margin-bottom: 20px; background: #111;">
+        <h3>📊 工場配置可能メンバー一覧</h3>
+        <p>利用可能キャッシュ: <strong id="lbl-cash">2,000,000</strong> 円</p>
+        <p>🛠️ 製造エンジニア数: <strong id="lbl-staff-eng">0</strong> 名 | 🧠 AI・宇宙科学者数: <strong id="lbl-staff-sci">0</strong> 名</p>
     </div>
 
     <div class="grid">
         <div class="card">
-            <h2>📊 会社基本情報（財務諸表）</h2>
-            <p><strong>経営期間:</strong> <span id="lbl-term">1</span> ヶ月目</p>
-            <p><strong>手元現金 (Cash):</strong> <span id="lbl-cash" style="color:#00ff66; font-size:18px; font-weight:bold;">2,000,000</span> 円</p>
-            <p><strong>銀行借入金:</strong> <span id="lbl-loan" style="color:#ff3333;">0</span> 円 | <strong>定期預金:</strong> <span id="lbl-deposit" style="color:#3b82f6;">0</span> 円</p>
-            <p><strong>現在の総社員数:</strong> <span id="lbl-staff" style="color:#ffea00; font-weight:bold;">1</span> 名</p>
-            <hr style="border-color:#333;">
-            <p><strong>📱 スマホ在庫:</strong> <span id="lbl-stock-phone">0</span> 台 | <strong>🚗 自動車在庫:</strong> <span id="lbl-stock-car">0</span> 台</p>
-            <p><strong>🤖 ロロボ在庫:</strong> <span id="lbl-stock-robot">0</span> 台 | <strong>🚀 ロケット在庫:</strong> <span id="lbl-stock-rocket">0</span> 機</p>
+            <h2>📱 モバイル製品ライン</h2>
+            <p>現在の倉庫在庫: <strong id="lbl-stock-phone">0</strong> 台</p>
+            <span class="sub-text">・コスト: 3万 | 売価: 7万</span>
+            <span class="success-text">✔ 条件: エンジニア1名以上</span>
+            <button onclick="makePhone()">スマートフォンを製造 (連打可)</button>
         </div>
-
         <div class="card">
-            <h2>⏱ 経営決算コマンド</h2>
-            <div class="btn-group">
-                <button onclick="nextMonth()" class="danger">⏱ 決算を行い、翌月へ進む</button>
-            </div>
+            <h2>🚗 次世代EV組立ライン</h2>
+            <p>現在の倉庫在庫: <strong id="lbl-stock-car">0</strong> 台</p>
+            <span class="sub-text">・コスト: 100万 | 売価: 250万</span>
+            <span class="error-text">⚠ 条件: エンジニア最低【3名】</span>
+            <button onclick="makeCar()">電気自動車(EV)を製造 (連打可)</button>
+        </div>
+        <div class="card">
+            <h2>🤖 人型AIロボットライン</h2>
+            <p>現在の倉庫在庫: <strong id="lbl-stock-robot">0</strong> 台</p>
+            <span class="sub-text">・コスト: 400万 | 通常売価: 1000万</span>
+            <span class="error-text">⚠ 条件: 科学者2名 ＋ エンジニア4名</span>
+            <button onclick="makeRobot()">AIロボットを製造 (連打可)</button>
+        </div>
+        <div class="card">
+            <h2>🚀 次世代ロケット開発ライン</h2>
+            <p>現在の倉庫在庫: <strong id="lbl-stock-rocket">0</strong> 機</p>
+            <span class="sub-text">・コスト: 1500万 | 通常売価: 4500万</span>
+            <span class="error-text">⚠ 条件: 科学者8名 ＋ エンジニア10名</span>
+            <button onclick="makeRocket()">宇宙ロケットを開発 (連打可)</button>
         </div>
     </div>
-
-    <div class="card" style="margin-top:20px;">
-        <h2>📜 CEO業務日誌</h2>
-        <div id="log" class="log-box">新世ハイテクグループシステムが正常に起動しました。</div>
-    </div>
-
 </body>
 </html>
