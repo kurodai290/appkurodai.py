@@ -19,12 +19,10 @@
     <script>
         let gameData;
         function loadData() {
-            let rawData = localStorage.getItem('corp_game_data');
             try {
-                gameData = JSON.parse(rawData);
-                if (!gameData || typeof gameData !== 'object' || !('tech_car' in gameData)) throw new Error();
+                gameData = JSON.parse(localStorage.getItem('corp_game_data'));
+                if (!gameData) throw new Error();
             } catch(e) {
-                alert("エラー：CEO室の画面を一度開いてデータを作成してください。");
                 window.location.href = "index.html";
             }
         }
@@ -33,7 +31,6 @@
             document.getElementById("lbl-cash").innerText = gameData.cash.toLocaleString();
             document.getElementById("lbl-staff-eng").innerText = gameData.seng;
             document.getElementById("lbl-staff-sci").innerText = gameData.ssci;
-            
             document.getElementById("lbl-stock-phone").innerText = gameData.sphone;
             document.getElementById("lbl-stock-car").innerText = gameData.scar;
             document.getElementById("lbl-stock-robot").innerText = gameData.srobot;
@@ -41,21 +38,19 @@
 
             if (!gameData.tech_car) { document.getElementById("btn-car").disabled = true; document.getElementById("lock-car").innerText = "🔒 R&D室でEV開発ライセンスの解放が必要です"; }
             else { document.getElementById("btn-car").disabled = false; document.getElementById("lock-car").innerText = ""; }
-
             if (!gameData.tech_robot) { document.getElementById("btn-robot").disabled = true; document.getElementById("lock-robot").innerText = "🔒 R&D室でロボット開発ライセンスの解放が必要です"; }
             else { document.getElementById("btn-robot").disabled = false; document.getElementById("lock-robot").innerText = ""; }
-
             if (!gameData.tech_rocket) { document.getElementById("btn-rocket").disabled = true; document.getElementById("lock-rocket").innerText = "🔒 R&D室でロケット開発ライセンスの解放が必要です"; }
             else { document.getElementById("btn-rocket").disabled = false; document.getElementById("lock-rocket").innerText = ""; }
 
+            // 💾 データをブラウザへ確実に即時セーブ（重要）
             localStorage.setItem('corp_game_data', JSON.stringify(gameData));
         }
 
         function processManufacturing(btnId, statusId, cost, buildTime, successCallback) {
             let btn = document.getElementById(btnId);
             let status = document.getElementById(statusId);
-            
-            if (gameData.cash < cost) { alert("製造資金（キャッシュ）が足りません！"); return; }
+            if (gameData.cash < cost) { alert("資金（キャッシュ）が足りません！"); return; }
 
             gameData.cash -= cost;
             btn.disabled = true;
@@ -79,42 +74,22 @@
             }, 1000);
         }
 
-        function makePhone() {
-            if (gameData.seng >= 1) { processManufacturing("btn-phone", "status-phone", 30000, 2, () => { gameData.sphone++; }); } 
-            else { alert("製造エンジニアが足りません！"); }
-        }
+        function makePhone() { if (gameData.seng >= 1) { processManufacturing("btn-phone", "status-phone", 30000, 2, () => { gameData.sphone++; }); } else { alert("エンジニアが足りません！"); } }
+        function makeCar() { if (gameData.seng >= 3) { processManufacturing("btn-car", "status-car", 1000000, 5, () => { gameData.scar++; }); } else { alert("エンジニアが最低3名必要です！"); } }
+        function makeRobot() { if (gameData.ssci >= 2 && gameData.seng >= 4) { processManufacturing("btn-robot", "status-robot", 4000000, 10, () => { gameData.srobot++; }); } else { alert("科学者2名＋エンジニア4名が必要です！"); } }
+        function makeRocket() { if (gameData.ssci >= 8 && gameData.seng >= 10) { processManufacturing("btn-rocket", "status-rocket", 15000000, 20, () => { gameData.srocket++; }); } else { alert("科学者8名＋エンジニア10名が必要です！"); } }
 
-        function makeCar() {
-            if (gameData.seng >= 3) { processManufacturing("btn-car", "status-car", 1000000, 5, () => { gameData.scar++; }); } 
-            else { alert("エンジニアが最低3名必要です！"); }
-        }
-
-        function makeRobot() {
-            if (gameData.ssci >= 2 && gameData.seng >= 4) { processManufacturing("btn-robot", "status-robot", 4000000, 10, () => { gameData.srobot++; }); } 
-            else { alert("科学者2名＋エンジニア4名が必要です！"); }
-        }
-
-        function makeRocket() {
-            if (gameData.ssci >= 8 && gameData.seng >= 10) { processManufacturing("btn-rocket", "status-rocket", 15000000, 20, () => { gameData.srocket++; }); } 
-            else { alert("科学者8名＋エンジニア10名が必要です！"); }
-        }
-
-        function initPage() {
-            loadData();
-            updateUI();
-        }
+        function initPage() { loadData(); updateUI(); }
     </script>
 </head>
 <body onload="initPage()">
-    <h1>🏭 専門製造ライン（技術認証ライセンス連動版）</h1>
-    <a class="nav-link" href="index.html">🏢 CEO室（総合統括本部）に戻る</a>
-    
+    <h1>🏭 専門製造ライン</h1>
+    <a class="nav-link" href="index.html">🏢 CEO室に戻る</a>
     <div class="card" style="margin-bottom: 20px; background: #111;">
         <h3>📊 工場配置可能メンバー一覧</h3>
         <p>利用可能キャッシュ: <strong id="lbl-cash">0</strong> 円</p>
         <p>🛠️ 製造エンジニア数: <strong id="lbl-staff-eng">0</strong> 名 | 🧠 AI・宇宙科学者数: <strong id="lbl-staff-sci">0</strong> 名</p>
     </div>
-
     <div class="grid">
         <div class="card">
             <h2>📱 モバイル製品ライン</h2>
