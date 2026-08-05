@@ -14,7 +14,17 @@
         .sub-text { font-size: 11px; color: #aaa; display: block; margin-top: 2px; }
     </style>
     <script>
-        let gameData = JSON.parse(localStorage.getItem('corp_game_data'));
+        let gameData;
+        function loadData() {
+            let rawData = localStorage.getItem('corp_game_data');
+            try {
+                gameData = JSON.parse(rawData);
+                if (!gameData || typeof gameData !== 'object' || !('tech_car' in gameData)) throw new Error();
+            } catch(e) {
+                alert("エラー：CEO室の画面を一度開いてデータを作成してください。");
+                window.location.href = "index.html";
+            }
+        }
 
         function updateUI() {
             document.getElementById("lbl-cash").innerText = gameData.cash.toLocaleString();
@@ -25,14 +35,18 @@
         function runCampaign(cost, effect) {
             if (gameData.cash < cost) { alert("広告予算（キャッシュ）が足りません！"); return; }
             gameData.cash -= cost;
-            // 認知度の上限は100%
             gameData.marketing = Math.min(100, gameData.marketing + effect);
             alert(`広告キャンペーンを実施しました！市場認知度が ${effect}% 向上しました。`);
             updateUI();
         }
+
+        function initPage() {
+            loadData();
+            updateUI();
+        }
     </script>
 </head>
-<body onload="updateUI()">
+<body onload="initPage()">
     <h1>📢 マーケティング・市場広告統括部</h1>
     <a class="nav-link" href="index.html">🏢 CEO室（総合統括本部）に戻る</a>
     
@@ -48,14 +62,14 @@
             <h2>📱 SNSバイラルマーケティング</h2>
             <p>低コストでネット上の認知を拡大します。</p>
             <span class="sub-text">費用: 15万円 | 📈 認知度: +8%</span>
-            <br>
+            <br><br>
             <button onclick="runCampaign(150000, 8)">SNS広告を打つ</button>
         </div>
         <div class="card">
             <h2>📺 全国マスメディアTVCM枠</h2>
             <p>巨額の資金を投じ、圧倒的なブランド力を築きます。</p>
             <span class="sub-text">費用: 100万円 | 📈 認知度: +35%</span>
-            <br>
+            <br><br>
             <button onclick="runCampaign(1000000, 35)">テレビCMを放映する</button>
         </div>
     </div>
