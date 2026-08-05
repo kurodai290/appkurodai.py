@@ -17,22 +17,29 @@
         .sub-text { font-size: 11px; color: #888; display: block; margin-top: 2px; }
     </style>
     <script>
-        // 💾 ローカルストレージからゲームデータを読み込む（URLパラメータを廃止し不具合修正）
-        let gameData = JSON.parse(localStorage.getItem('corp_game_data'));
+        let gameData;
+        function loadData() {
+            let rawData = localStorage.getItem('corp_game_data');
+            try {
+                gameData = JSON.parse(rawData);
+                if (!gameData || typeof gameData !== 'object' || !('tech_car' in gameData)) throw new Error();
+            } catch(e) {
+                alert("エラー：CEO室の画面を一度開いてデータを作成してください。");
+                window.location.href = "index.html";
+            }
+        }
 
         function updateUI() {
             document.getElementById("lbl-cash").innerText = gameData.cash.toLocaleString();
             document.getElementById("lbl-loan").innerText = gameData.loan.toLocaleString();
             document.getElementById("lbl-deposit").innerText = gameData.deposit.toLocaleString();
-            // データを保存
             localStorage.setItem('corp_game_data', JSON.stringify(gameData));
         }
 
         function takeLoan() {
-            // 💡 難易度アップ：手元現線の2倍までしか融資を受けられないリアルな制限を追加
             let maxLoan = gameData.cash * 2;
             if (gameData.loan >= maxLoan) {
-                alert("銀行の与信審査に落ちました。これ以上の融資は受けられません（融資限度額オーバー）。");
+                alert("銀行の与信審査に落ちました。これ以上の融資は受けられません（上限超過）。");
                 return;
             }
             gameData.loan += 1000000;
@@ -61,15 +68,19 @@
         function withdrawDeposit() {
             if (gameData.deposit >= 1000000) {
                 gameData.deposit -= 1000000;
-                // 💡 難易度アップ：いつでも等価で引き出せた不具合を修正し、中途解約ペナルティ（5万円）を導入
                 gameData.cash += 950000;
                 alert("定期預金を中途解約したため、手数料50,000円が差し引かれました。");
                 updateUI();
             } else { alert("定期預金口座に解約可能な残高がありません！"); }
         }
+
+        function initPage() {
+            loadData();
+            updateUI();
+        }
     </script>
 </head>
-<body onload="updateUI()">
+<body onload="initPage()">
     <h1>🏦 中央第一銀行（財務営業窓口）</h1>
     <a class="nav-link" href="index.html">🏢 CEO室（総合統括本部）に戻る</a>
 
@@ -79,7 +90,6 @@
     </div>
 
     <div class="grid">
-        <!-- 融資管理カード -->
         <div class="card">
             <h2>⚙️ デット・ファイナンス（銀行融資審査窓口）</h2>
             <p>現在の借入残高: <strong id="lbl-loan" style="color:#ff3333;">0</strong> 円</p>
@@ -90,7 +100,6 @@
             </div>
         </div>
 
-        <!-- 資産運用カード -->
         <div class="card">
             <h2>⚙️ アセットマネジメント（定期預金）</h2>
             <p>現在の預金残高: <strong id="lbl-deposit" style="color:#3b82f6;">0</strong> 円</p>
