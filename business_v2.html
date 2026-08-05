@@ -2,131 +2,119 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>統合経営システム - 製造・事業部ルーム</title>
+    <title>統合経営システム - 人事労務ルーム</title>
     <style>
         body { background: #121214; color: #e0e0e6; font-family: 'Courier New', Courier, monospace; padding: 20px; line-height: 1.6; }
-        h1, h2, h3 { color: #a855f7; border-bottom: 1px solid #333; padding-bottom: 5px; margin-top: 15px; }
+        h1, h2, h3 { color: #eab308; border-bottom: 1px solid #333; padding-bottom: 5px; margin-top: 15px; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .card { background: #1a1a24; border: 1px solid #2d2d3d; padding: 15px; border-radius: 5px; }
-        button { background: #a855f7; color: #fff; border: none; padding: 12px 18px; font-weight: bold; border-radius: 4px; cursor: pointer; transition: 0.1s; width: 100%; }
-        button:hover { background: #c084fc; }
+        .card { background: #1a1a24; border: 1px solid #2d2d3d; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+        button { background: #eab308; color: #000; border: none; padding: 12px 18px; font-weight: bold; border-radius: 4px; cursor: pointer; transition: 0.1s; width: 100%; }
+        button:hover { background: #fde047; }
         button:disabled { background: #444; color: #888; cursor: not-allowed; }
         .nav-link { background: #22c55e; color: black; padding: 12px 24px; text-decoration: none; font-weight: bold; border-radius: 4px; display: inline-block; margin-bottom: 20px; }
         .sub-text { font-size: 11px; color: #aaa; display: block; margin-top: 2px; }
-        .lock-text { color: #ef4444; font-size: 12px; font-weight: bold; display: block; margin-top: 5px; }
-        .status-text { font-size: 12px; color: #eab308; font-weight: bold; display: block; margin-top: 5px; min-height: 18px; }
+        .status-text { font-size: 12px; color: #3b82f6; font-weight: bold; display: block; margin-top: 5px; min-height: 18px; }
     </style>
     <script>
-        let gameData = JSON.parse(localStorage.getItem('corp_game_data'));
+        let gameData;
+        function loadData() {
+            let rawData = localStorage.getItem('corp_game_data');
+            try {
+                gameData = JSON.parse(rawData);
+                if (!gameData || typeof gameData !== 'object' || !('tech_car' in gameData)) throw new Error();
+            } catch(e) {
+                alert("エラー：CEO室の画面を一度開いてデータを作成してください。");
+                window.location.href = "index.html";
+            }
+        }
+
+        function getHireCost(baseCost, currentStaff) {
+            return Math.floor(baseCost * Math.pow(1.25, currentStaff));
+        }
 
         function updateUI() {
             document.getElementById("lbl-cash").innerText = gameData.cash.toLocaleString();
+            document.getElementById("lbl-staff-sales").innerText = gameData.ssales;
             document.getElementById("lbl-staff-eng").innerText = gameData.seng;
             document.getElementById("lbl-staff-sci").innerText = gameData.ssci;
+
+            document.getElementById("cost-sales").innerText = getHireCost(100000, gameData.ssales - 1).toLocaleString();
+            document.getElementById("cost-eng").innerText = getHireCost(150000, gameData.seng).toLocaleString();
+            document.getElementById("cost-sci").innerText = getHireCost(500000, gameData.ssci).toLocaleString();
             
-            document.getElementById("lbl-stock-phone").innerText = gameData.sphone;
-            document.getElementById("lbl-stock-car").innerText = gameData.scar;
-            document.getElementById("lbl-stock-robot").innerText = gameData.srobot;
-            document.getElementById("lbl-stock-rocket").innerText = gameData.srocket;
-
-            // 💡 難易度アップ：R&D（技術開発）が完了していない製品はボタンを完全ロック
-            if (!gameData.tech_car) { document.getElementById("btn-car").disabled = true; document.getElementById("lock-car").innerText = "🔒 R&D室でEV開発ライセンスの解放が必要です"; }
-            if (!gameData.tech_robot) { document.getElementById("btn-robot").disabled = true; document.getElementById("lock-robot").innerText = "🔒 R&D室でロボット開発ライセンスの解放が必要です"; }
-            if (!gameData.tech_rocket) { document.getElementById("btn-rocket").disabled = true; document.getElementById("lock-rocket").innerText = "🔒 R&D室でロケット開発ライセンスの解放が必要です"; }
-
             localStorage.setItem('corp_game_data', JSON.stringify(gameData));
         }
 
-        function processManufacturing(btnId, statusId, cost, buildTime, successCallback) {
+        function processHiring(btnId, statusId, baseCost, currentCount, buildTime, successCallback) {
             let btn = document.getElementById(btnId);
             let status = document.getElementById(statusId);
+            let actualCost = getHireCost(baseCost, currentCount);
             
-            if (gameData.cash < cost) { alert("製造資金（キャッシュ）が足りません！"); return; }
+            if (gameData.cash < actualCost) {
+                alert("求人費用が不足しています！");
+                return;
+            }
 
-            gameData.cash -= cost;
+            gameData.cash -= actualCost;
             btn.disabled = true;
             updateUI();
 
             let timeLeft = buildTime;
-            status.innerText = `⏳ 製造中... (残り ${timeLeft}秒)`;
+            status.innerText = `⏳ 選考・研修中... (残り ${timeLeft}秒)`;
 
             let timer = setInterval(() => {
                 timeLeft--;
                 if (timeLeft > 0) {
-                    status.innerText = `⏳ 製造中... (残り ${timeLeft}秒)`;
+                    status.innerText = `⏳ 選考・研修中... (残り ${timeLeft}秒)`;
                 } else {
                     clearInterval(timer);
-                    status.innerText = "✅ 製造完了！";
+                    status.innerText = "🎉 採用・配属完了！";
                     successCallback();
                     btn.disabled = false;
                     updateUI();
-                    setTimeout(() => { if(status.innerText === "✅ 製造完了！") status.innerText = ""; }, 2000);
+                    setTimeout(() => { if(status.innerText === "🎉 採用・配属完了！") status.innerText = ""; }, 2000);
                 }
             }, 1000);
         }
 
-        function makePhone() {
-            if (gameData.seng >= 1) { processManufacturing("btn-phone", "status-phone", 30000, 2, () => { gameData.sphone++; }); } 
-            else { alert("製造エンジニアが足りません！"); }
-        }
+        function hireSales() { processHiring("btn-sales", "status-sales", 100000, gameData.ssales - 1, 3, () => { gameData.ssales++; }); }
+        function hireEng() { processHiring("btn-eng", "status-eng", 150000, gameData.seng, 5, () => { gameData.seng++; }); }
+        function hireSci() { processHiring("btn-sci", "status-sci", 500000, gameData.ssci, 10, () => { gameData.ssci++; }); }
 
-        function makeCar() {
-            if (gameData.seng >= 3) { processManufacturing("btn-car", "status-car", 1000000, 5, () => { gameData.scar++; }); } 
-            else { alert("エンジニアが最低3名必要です！"); }
-        }
-
-        function makeRobot() {
-            if (gameData.ssci >= 2 && gameData.seng >= 4) { processManufacturing("btn-robot", "status-robot", 4000000, 10, () => { gameData.srobot++; }); } 
-            else { alert("科学者2名＋エンジニア4名が必要です！"); }
-        }
-
-        function makeRocket() {
-            if (gameData.ssci >= 8 && gameData.seng >= 10) { processManufacturing("btn-rocket", "status-rocket", 15000000, 20, () => { gameData.srocket++; }); } 
-            else { alert("科学者8名＋エンジニア10名が必要です！"); }
+        function initPage() {
+            loadData();
+            updateUI();
         }
     </script>
 </head>
-<body onload="updateUI()">
-    <h1>🏭 専門製造ライン（技術認証ライセンス連動版）</h1>
+<body onload="initPage()">
+    <h1>👥 人事労務・専門職採用本部</h1>
     <a class="nav-link" href="index.html">🏢 CEO室（総合統括本部）に戻る</a>
     
-    <div class="card" style="margin-bottom: 20px; background: #111;">
-        <h3>📊 工場配置可能メンバー一覧</h3>
-        <p>利用可能キャッシュ: <strong id="lbl-cash">0</strong> 円</p>
-        <p>🛠️ 製造エンジニア数: <strong id="lbl-staff-eng">0</strong> 名 | 🧠 AI・宇宙科学者数: <strong id="lbl-staff-sci">0</strong> 名</p>
+    <div class="card" style="background: #111;">
+        <h3>📊 労働力スタック状況</h3>
+        <p>求人費用キャッシュ: <strong id="lbl-cash">0</strong> 円</p>
+        <p>💼 営業: <strong id="lbl-staff-sales">1</strong> 名 | 🛠️ エンジニア: <strong id="lbl-staff-eng">0</strong> 名 | 🧠 科学者: <strong id="lbl-staff-sci">0</strong> 名</p>
     </div>
-
+    
     <div class="grid">
         <div class="card">
-            <h2>📱 モバイル製品ライン</h2>
-            <p>現在の倉庫在庫: <strong id="lbl-stock-phone">0</strong> 台</p>
-            <span class="sub-text">・コスト: 3万 | 売価: 7万 | ⏳ 時間: 2秒</span>
-            <button id="btn-phone" onclick="makePhone()">スマートフォンを製造</button>
-            <div id="status-phone" class="status-text"></div>
+            <h3>💼 営業スタッフ</h3>
+            <span class="sub-text">コスト: <strong id="cost-sales">0</strong> 円 / 月給: 15万 | ⏳ 選考: 3秒</span>
+            <button id="btn-sales" onclick="hireSales()">営業を採用</button>
+            <div id="status-sales" class="status-text"></div>
         </div>
         <div class="card">
-            <h2>🚗 次世代EV組立ライン</h2>
-            <p>現在の倉庫在庫: <strong id="lbl-stock-car">0</strong> 台</p>
-            <span class="sub-text">・コスト: 100万 | 売価: 250万 | ⏳ 時間: 5秒</span>
-            <button id="btn-car" onclick="makeCar()">電気自動車(EV)を製造</button>
-            <div id="lock-car" class="lock-text"></div>
-            <div id="status-car" class="status-text"></div>
+            <h3>🛠️ 製造エンジニア</h3>
+            <span class="sub-text">コスト: <strong id="cost-eng">0</strong> 円 / 月給: 25万 | ⏳ 選考: 5秒</span>
+            <button id="btn-eng" onclick="hireEng()">エンジニアを採用</button>
+            <div id="status-eng" class="status-text"></div>
         </div>
         <div class="card">
-            <h2>🤖 人型AIロボットライン</h2>
-            <p>現在の倉庫在庫: <strong id="lbl-stock-robot">0</strong> 台</p>
-            <span class="sub-text">・コスト: 400万 | 通常売価: 1000万 | ⏳ 時間: 10秒</span>
-            <button id="btn-robot" onclick="makeRobot()">AIロボットを製造</button>
-            <div id="lock-robot" class="lock-text"></div>
-            <div id="status-robot" class="status-text"></div>
-        </div>
-        <div class="card">
-            <h2>🚀 次世代ロケット開発ライン</h2>
-            <p>現在の倉庫在庫: <strong id="lbl-stock-rocket">0</strong> 機</p>
-            <span class="sub-text">・コスト: 1500万 | 通常売価: 4500万 | ⏳ 時間: 20秒</span>
-            <button id="btn-rocket" onclick="makeRocket()">宇宙ロケットを開発</button>
-            <div id="lock-rocket" class="lock-text"></div>
-            <div id="status-rocket" class="status-text"></div>
+            <h3>🧠 最先端AI科学者</h3>
+            <span class="sub-text">コスト: <strong id="cost-sci">0</strong> 円 / 月給: 60万 | ⏳ 選考: 10秒</span>
+            <button id="btn-sci" onclick="hireSci()">科学者を採用</button>
+            <div id="status-sci" class="status-text"></div>
         </div>
     </div>
 </body>
