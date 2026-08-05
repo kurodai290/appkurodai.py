@@ -28,9 +28,8 @@
             let rawData = localStorage.getItem('corp_game_data');
             try {
                 gameData = JSON.parse(rawData);
-                // 必要なデータ構造が存在するかチェック、無ければ強制初期化
                 if (!gameData || typeof gameData !== 'object' || !('tech_car' in gameData)) {
-                    throw new Error("データ構造の初期化");
+                    throw new Error("Reset");
                 }
             } catch (e) {
                 gameData = {
@@ -50,20 +49,28 @@
             localStorage.setItem('corp_game_data', JSON.stringify(gameData));
         }
 
+        // 💡 エラー対策：HTML内にタグが存在するか1つずつ安全に確認して書き込む
+        function safeSetText(id, value) {
+            let element = document.getElementById(id);
+            if (element) {
+                element.innerText = value;
+            }
+        }
+
         function updateUI() {
-            document.getElementById("lbl-term").innerText = gameData.term;
-            document.getElementById("lbl-cash").innerText = gameData.cash.toLocaleString();
-            document.getElementById("lbl-loan").innerText = gameData.loan.toLocaleString();
-            document.getElementById("lbl-deposit").innerText = gameData.deposit.toLocaleString();
-            document.getElementById("lbl-staff-sales").innerText = gameData.ssales;
-            document.getElementById("lbl-staff-eng").innerText = gameData.seng;
-            document.getElementById("lbl-staff-sci").innerText = gameData.ssci;
-            document.getElementById("lbl-stock-phone").innerText = gameData.sphone;
-            document.getElementById("lbl-stock-car").innerText = gameData.scar;
-            document.getElementById("lbl-stock-robot").innerText = gameData.srobot;
-            document.getElementById("lbl-stock-rocket").innerText = gameData.srocket;
-            document.getElementById("lbl-marketing").innerText = gameData.marketing;
-            document.getElementById("news-display").innerText = gameData.news;
+            safeSetText("lbl-term", gameData.term);
+            safeSetText("lbl-cash", gameData.cash.toLocaleString());
+            safeSetText("lbl-loan", gameData.loan.toLocaleString());
+            safeSetText("lbl-deposit", gameData.deposit.toLocaleString());
+            safeSetText("lbl-staff-sales", gameData.ssales);
+            safeSetText("lbl-staff-eng", gameData.seng);
+            safeSetText("lbl-staff-sci", gameData.ssci);
+            safeSetText("lbl-stock-phone", gameData.sphone);
+            safeSetText("lbl-stock-car", gameData.scar);
+            safeSetText("lbl-stock-robot", gameData.srobot);
+            safeSetText("lbl-stock-rocket", gameData.srocket);
+            safeSetText("lbl-marketing", gameData.marketing);
+            safeSetText("news-display", gameData.news);
         }
 
         function logAction(text) {
@@ -81,11 +88,9 @@
             updateUI();
         }
 
-        // ⏭️ 翌月に進む（月次決算の実行メインロジック）
         function nextMonth() {
             logAction(`--- 【${gameData.term}ヶ月目 月次決算報告】 ---`);
             
-            // 1. 販売枠の計算（営業スタッフ数 × 3）にブランド認知度(%)の制限をかける
             let maxSales = gameData.ssales * 3;
             let salesCapacity = Math.ceil(maxSales * (gameData.marketing / 100));
             logAction(`[営業部] ブランド認知度(${gameData.marketing}%)により、今月の有効販売枠は ${salesCapacity} 個に制限されました（最大能力: ${maxSales}）`);
@@ -93,7 +98,6 @@
             let multHighTech = gameData.mult_t;
             let multStandard = gameData.mult_c;
 
-            // 2. 製品の自動売却処理（高いものから優先的に枠を消費）
             if (gameData.srocket > 0) {
                 let sell = Math.min(gameData.srocket, salesCapacity); let p = Math.round(45000000 * multHighTech);
                 gameData.srocket -= sell; salesCapacity -= sell; gameData.cash += (p * sell);
@@ -115,14 +119,12 @@
                 if(sell > 0) logAction(`[営業] スマホが ${sell} 台売却。売上: +${(p * sell).toLocaleString()}円`);
             }
 
-            // 3. 倉庫維持費（売れ残りペナルティコスト）の計算
             let storageCost = (gameData.sphone * 5000) + (gameData.scar * 50000) + (gameData.srobot * 150000) + (gameData.srocket * 500000);
             if (storageCost > 0) {
                 gameData.cash -= storageCost;
                 logAction(`[倉庫] 売れ残り在庫の維持管理コストが発生: -${storageCost.toLocaleString()}円`);
             }
 
-            // 4. 固定費・人件費の引落
             let costRent = 150000;
             let costSales = gameData.ssales * 150000;
             let costEng = gameData.seng * 250000;
@@ -131,44 +133,33 @@
             gameData.cash -= totalExpenses;
             logAction(`[財務] 固定費引落（家賃＋人件費）: 計 -${totalExpenses.toLocaleString()}円`);
 
-            // 5. 銀行利息処理（借入利息0.5%引落、預金利息0.2%付与）
-            let loanInterest = Math.round(gameData.loan * 0.005);
-            let depositInterest = Math.round(gameData.deposit * 0.002);
-            gameData.cash = gameData.cash - loanInterest + depositInterest;
-            if (loanInterest > 0) logAction(`[財務] 融資の借入利息が発生: -${loanInterest.toLocaleString()}円`);
-            if (depositInterest > 0) logAction(`[財務] 定期預金の受取利息が発生: +${depositInterest.toLocaleString()}円`);
-
-            // 6. ブランド認知度の自然低下（毎月5%減少、最低5%）
+            gameData.cash = gameData.cash - Math.round(gameData.loan * 0.005) + Math.round(gameData.deposit * 0.002);
             gameData.marketing = Math.max(5, gameData.marketing - 5);
-            logAction(`[広報] 時間の経過により、ブランド認知度が 5% 下落しました。`);
 
-            // 7. 資金ショート（破産）時の定期預金自動解約救済システム
             if (gameData.cash < 0 && gameData.deposit > 0) {
                 let deficit = Math.abs(gameData.cash);
                 let brokenDeposit = Math.min(gameData.deposit, Math.ceil(deficit / 1000000) * 1000000);
                 gameData.deposit -= brokenDeposit;
                 gameData.cash += brokenDeposit;
-                logAction(`[警告] 現金枯渇！不渡りを防ぐため定期預金から ${brokenDeposit.toLocaleString()} 円が強制解約されました。`);
+                logAction(`[警告] 現金枯渇！定期預金から ${brokenDeposit.toLocaleString()} 円が強制解約されました。`);
             }
             
-            // 8. 最終勝敗・ゲームオーバー判定
             if (gameData.cash < 0) {
-                alert("キャッシュが底をつき、不渡りを出しました。あなたの会社は倒産しました（ゲームオーバー）。");
+                alert("キャッシュが底をつき、倒産しました。ゲームオーバーです。");
                 resetGame();
                 return;
             }
             if (gameData.cash >= 100000000) {
-                alert(`🎉 おめでとうございます！${gameData.term}ヶ月目に総キャッシュ1億円を突破！ゲームクリアです！`);
+                alert(`🎉 おめでとうございます！ゲームクリアです！`);
                 resetGame();
                 return;
             }
             if (gameData.term >= 24) {
-                alert(`⏳ タイムアップ！24ヶ月以内に1億円を達成できませんでした。ゲームオーバーです。`);
+                alert(`⏳ タイムアップ！ゲームオーバーです。`);
                 resetGame();
                 return;
             }
 
-            // 9. 次のターンの景気変動ニュースを抽選
             let rand = Math.random();
             if (rand < 0.20) { 
                 gameData.news = "【テクノロジー大バブル到来！】ロボットとロケットの売価が【1.5倍】に高騰中！"; 
@@ -184,7 +175,6 @@
                 gameData.mult_c = 1.0; gameData.mult_t = 1.0;
             }
 
-            // 10. ターンを加算して保存・画面更新
             gameData.term++;
             saveData();
             updateUI();
@@ -193,3 +183,20 @@
 </head>
 <body onload="initPage()">
     <h1>👔 CEO総合統括本部 (Data Cloud v3)</h1>
+    <div class="mission-box">🎯 MISSION: 24ヶ月以内にキャッシュ1億円を達成せよ！</div>
+    <div class="news-box">🚨 TOP NEWS ➔ <span id="news-display">読み込み中...</span></div>
+    
+    <h3>📂 社内各部署への移動リンク</h3>
+    <div class="btn-group" style="margin-bottom: 25px;">
+        <a class="nav-btn btn-bank" href="bank_v2.html">🏦 財務銀行窓口</a>
+        <a class="nav-btn btn-business" href="business_v2.html">🏭 製造ライン</a>
+        <a class="nav-btn btn-hr" href="hr_v2.html">👥 人事労務本部</a>
+        <a class="nav-btn btn-marketing" href="marketing.html">📢 マーケティング広告部</a>
+        <a class="nav-btn btn-rnd" href="rnd.html">🧠 R&D研究開発部</a>
+    </div>
+    
+    <div class="grid">
+        <div class="card">
+            <h2>📊 会社基本情報（財務諸表）</h2>
+            <p><strong>経営期間:</strong> <span id="lbl-term">1</span> / 24 ヶ月目</p>
+            <p><strong>手元現金:</strong> <span id="lbl-cash" style="color:#00ff66; font-size:18px; font-weight:bold;">2,000,000</span> 円</p>
