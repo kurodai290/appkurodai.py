@@ -22,16 +22,28 @@
         .mission-box { background: #1e3a8a; color: #fff; padding: 10px; border-radius: 4px; font-weight: bold; margin-bottom: 15px; border-left: 5px solid #3b82f6; }
     </style>
     <script>
-        // 💾 ローカルストレージからセーブデータを読み込む（無ければ初期化）
-        let gameData = JSON.parse(localStorage.getItem('corp_game_data')) || {
-            cash: 2000000, loan: 0, deposit: 0,
-            sphone: 0, scar: 0, srobot: 0, srocket: 0,
-            ssales: 1, seng: 0, ssci: 0,
-            term: 1, news: "安定した経済環境です。各部門を開拓しましょう！",
-            mult_c: 1.0, mult_t: 1.0,
-            marketing: 20, // 認知度 (%)
-            tech_car: false, tech_robot: false, tech_rocket: false // 技術ロック
-        };
+        // 💾 古い壊れたデータ構造のバグを強制リセットする安全設計
+        let gameData;
+        function loadData() {
+            let rawData = localStorage.getItem('corp_game_data');
+            try {
+                gameData = JSON.parse(rawData);
+                if (!gameData || typeof gameData !== 'object' || !('tech_car' in gameData)) {
+                    throw new Error("データ破損");
+                }
+            } catch (e) {
+                gameData = {
+                    cash: 2000000, loan: 0, deposit: 0,
+                    sphone: 0, scar: 0, srobot: 0, srocket: 0,
+                    ssales: 1, seng: 0, ssci: 0,
+                    term: 1, news: "安定した経済環境です。各部門を開拓しましょう！",
+                    mult_c: 1.0, mult_t: 1.0,
+                    marketing: 20,
+                    tech_car: false, tech_robot: false, tech_rocket: false
+                };
+                saveData();
+            }
+        }
 
         function saveData() {
             localStorage.setItem('corp_game_data', JSON.stringify(gameData));
@@ -63,19 +75,21 @@
             window.location.reload();
         }
 
+        function initPage() {
+            loadData();
+            updateUI();
+        }
+
         function nextMonth() {
             logAction(`--- 【${gameData.term}ヶ月目 月次決算報告】 ---`);
             
-            // 営業力とマーケティング認知度によるリアル販売枠
             let maxSales = gameData.ssales * 3;
-            // 認知度(%)に応じて、実際にさばける上限が制限される超高難度化
             let salesCapacity = Math.ceil(maxSales * (gameData.marketing / 100));
             logAction(`[営業部] ブランド認知度(${gameData.marketing}%)により、今月の有効販売枠は ${salesCapacity} 個に制限されました（最大: ${maxSales}）`);
 
             let multHighTech = gameData.mult_t;
             let multStandard = gameData.mult_c;
 
-            // 製品売却
             if (gameData.srocket > 0) {
                 let sell = Math.min(gameData.srocket, salesCapacity); let p = Math.round(45000000 * multHighTech);
                 gameData.srocket -= sell; salesCapacity -= sell; gameData.cash += (p * sell);
@@ -97,14 +111,12 @@
                 if(sell > 0) logAction(`[営業] スマホが ${sell} 台売却。売上: +${(p * sell).toLocaleString()}円`);
             }
 
-            // 倉庫維持費
             let storageCost = (gameData.sphone * 5000) + (gameData.scar * 50000) + (gameData.srobot * 150000) + (gameData.srocket * 500000);
             if (storageCost > 0) {
                 gameData.cash -= storageCost;
                 logAction(`[倉庫] 売れ残り在庫の維持管理コストが発生: -${storageCost.toLocaleString()}円`);
             }
 
-            // 固定費人件費
             let costRent = 150000;
             let costSales = gameData.ssales * 150000;
             let costEng = gameData.seng * 250000;
@@ -113,14 +125,10 @@
             gameData.cash -= totalExpenses;
             logAction(`[財務] 固定費引落（家賃＋人件費）: 計 -${totalExpenses.toLocaleString()}円`);
 
-            // 金利
             gameData.cash = gameData.cash - Math.round(gameData.loan * 0.005) + Math.round(gameData.deposit * 0.002);
-
-            // 認知度の自然減衰（毎月5%ダウン、最低5%）
             gameData.marketing = Math.max(5, gameData.marketing - 5);
             logAction(`[広報] 時間の経過により、ブランド認知度が 5% 下落しました。`);
 
-            // 破産判定と自動補填
             if (gameData.cash < 0 && gameData.deposit > 0) {
                 let deficit = Math.abs(gameData.cash);
                 let brokenDeposit = Math.min(gameData.deposit, Math.ceil(deficit / 1000000) * 1000000);
@@ -147,7 +155,6 @@
                 return;
             }
 
-            // 景気変動イベント
             let rand = Math.random();
             if (rand < 0.20) { 
                 gameData.news = "【テクノロジー大バブル到来！】ロボットとロケットの売価が【1.5倍】に高騰中！"; 
@@ -169,7 +176,7 @@
         }
     </script>
 </head>
-<body onload="updateUI()">
+<body onload="initPage()">
     <h1>👔 CEO総合統括本部 (Data Cloud v3)</h1>
     <div class="mission-box">🎯 MISSION: 24ヶ月以内にキャッシュ1億円を達成せよ！(自動セーブ対応)</div>
     <div class="news-box">🚨 TOP NEWS ➔ <span id="news-display">読み込み中...</span></div>
@@ -187,4 +194,3 @@
         <div class="card">
             <h2>📊 会社基本情報（財務諸表）</h2>
             <p><strong>経営期間:</strong> <span id="lbl-term">1</span> / 24 ヶ月目</p>
-            <p><strong>手元現金:</strong> <span id="lbl-cash" style="color:#00ff66; font-size:18px; font-weight:bold;">2,000,000</span> 円</p>
