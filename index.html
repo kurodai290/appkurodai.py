@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -14,53 +13,44 @@
         .btn-bank { background: #3b82f6; }
         .btn-business { background: #a855f7; }
         .btn-hr { background: #eab308; color: #000; }
+        .btn-marketing { background: #ec4899; }
+        .btn-rnd { background: #06b6d4; }
         button.danger { background: #ef4444; color: #fff; border: none; padding: 15px 30px; font-weight: bold; border-radius: 4px; cursor: pointer; font-size: 16px; width: 100%; }
         button.danger:hover { background: #f87171; }
-        .log-box { background: #000; color: #00ff66; padding: 10px; height: 130px; overflow-y: scroll; font-size: 13px; border: 1px solid #333; }
+        .log-box { background: #000; color: #00ff66; padding: 10px; height: 150px; overflow-y: scroll; font-size: 13px; border: 1px solid #333; margin-top: 10px; }
         .news-box { background: #ffea00; color: #000; padding: 12px; border-radius: 4px; font-weight: bold; margin-bottom: 20px; border-left: 5px solid #ffaa00; font-size: 15px; }
+        .mission-box { background: #1e3a8a; color: #fff; padding: 10px; border-radius: 4px; font-weight: bold; margin-bottom: 15px; border-left: 5px solid #3b82f6; }
     </style>
     <script>
-        let params = new URLSearchParams(window.location.search);
-        let cash = params.get('cash') ? parseInt(params.get('cash')) : 2000000;
-        let loan = params.get('loan') ? parseInt(params.get('loan')) : 0;
-        let deposit = params.get('deposit') ? parseInt(params.get('deposit')) : 0;
-        
-        let stockPhone = params.get('sphone') ? parseInt(params.get('sphone')) : 0;
-        let stockCar = params.get('scar') ? parseInt(params.get('scar')) : 0;
-        let stockRobot = params.get('srobot') ? parseInt(params.get('srobot')) : 0;
-        let stockRocket = params.get('srocket') ? parseInt(params.get('srocket')) : 0;
-        
-        let staffSales = params.get('ssales') ? parseInt(params.get('ssales')) : 1;
-        let staffEng = params.get('seng') ? parseInt(params.get('seng')) : 0;
-        let staffSci = params.get('ssci') ? parseInt(params.get('ssci')) : 0;
-        
-        let term = params.get('term') ? parseInt(params.get('term')) : 1;
-        let newsText = params.get('news') ? params.get('news') : "安定した経済環境です。専門職を採用して組織を強化しましょう！";
-        let priceMultiplier = params.get('mult') ? parseFloat(params.get('mult')) : 1.0;
+        // 💾 ローカルストレージからセーブデータを読み込む（無ければ初期化）
+        let gameData = JSON.parse(localStorage.getItem('corp_game_data')) || {
+            cash: 2000000, loan: 0, deposit: 0,
+            sphone: 0, scar: 0, srobot: 0, srocket: 0,
+            ssales: 1, seng: 0, ssci: 0,
+            term: 1, news: "安定した経済環境です。各部門を開拓しましょう！",
+            mult_c: 1.0, mult_t: 1.0,
+            marketing: 20, // 認知度 (%)
+            tech_car: false, tech_robot: false, tech_rocket: false // 技術ロック
+        };
+
+        function saveData() {
+            localStorage.setItem('corp_game_data', JSON.stringify(gameData));
+        }
 
         function updateUI() {
-            document.getElementById("lbl-term").innerText = term;
-            document.getElementById("lbl-cash").innerText = cash.toLocaleString();
-            document.getElementById("lbl-loan").innerText = loan.toLocaleString();
-            document.getElementById("lbl-deposit").innerText = deposit.toLocaleString();
-            
-            document.getElementById("lbl-staff-sales").innerText = staffSales;
-            document.getElementById("lbl-staff-eng").innerText = staffEng;
-            document.getElementById("lbl-staff-sci").innerText = staffSci;
-            
-            document.getElementById("lbl-stock-phone").innerText = stockPhone;
-            document.getElementById("lbl-stock-car").innerText = stockCar;
-            document.getElementById("lbl-stock-robot").innerText = stockRobot;
-            document.getElementById("lbl-stock-rocket").innerText = stockRocket;
-            
-            document.getElementById("news-display").innerText = newsText;
-
-            // 全て小文字の完璧な連動クエリ
-            let dataQuery = `?cash=${cash}&loan=${loan}&deposit=${deposit}&sphone=${stockPhone}&scar=${stockCar}&srobot=${stockRobot}&srocket=${stockRocket}&ssales=${staffSales}&seng=${staffEng}&ssci=${staffSci}&term=${term}&news=${encodeURIComponent(newsText)}&mult=${priceMultiplier}`;
-            
-            document.getElementById("lnk-bank").href = "bank_v2.html" + dataQuery;
-            document.getElementById("lnk-business").href = "business_v2.html" + dataQuery;
-            document.getElementById("lnk-hr").href = "hr_v2.html" + dataQuery;
+            document.getElementById("lbl-term").innerText = gameData.term;
+            document.getElementById("lbl-cash").innerText = gameData.cash.toLocaleString();
+            document.getElementById("lbl-loan").innerText = gameData.loan.toLocaleString();
+            document.getElementById("lbl-deposit").innerText = gameData.deposit.toLocaleString();
+            document.getElementById("lbl-staff-sales").innerText = gameData.ssales;
+            document.getElementById("lbl-staff-eng").innerText = gameData.seng;
+            document.getElementById("lbl-staff-sci").innerText = gameData.ssci;
+            document.getElementById("lbl-stock-phone").innerText = gameData.sphone;
+            document.getElementById("lbl-stock-car").innerText = gameData.scar;
+            document.getElementById("lbl-stock-robot").innerText = gameData.srobot;
+            document.getElementById("lbl-stock-rocket").innerText = gameData.srocket;
+            document.getElementById("lbl-marketing").innerText = gameData.marketing;
+            document.getElementById("news-display").innerText = gameData.news;
         }
 
         function logAction(text) {
@@ -68,92 +58,133 @@
             if (logBox) { logBox.innerHTML += "<br>" + text; logBox.scrollTop = logBox.scrollHeight; }
         }
 
+        function resetGame() {
+            localStorage.removeItem('corp_game_data');
+            window.location.reload();
+        }
+
         function nextMonth() {
-            logAction(`--- 【${term}ヶ月目 月次決算報告】 ---`);
-            let salesCapacity = staffSales * 3;
-            logAction(`[営業部] 今月の総営業販売枠（上限）: ${salesCapacity} 個`);
-
-            if (stockRocket > 0) {
-                let sell = Math.min(stockRocket, salesCapacity); let p = Math.round(45000000 * priceMultiplier);
-                stockRocket -= sell; salesCapacity -= sell; cash += (p * sell);
-                if(sell > 0) logAction(`[営業] ロケットが ${sell} 機売却されました。売上: +${(p * sell).toLocaleString()}円`);
-            }
-            if (stockRobot > 0) {
-                let sell = Math.min(stockRobot, salesCapacity); let p = Math.round(10000000 * priceMultiplier);
-                stockRobot -= sell; salesCapacity -= sell; cash += (p * sell);
-                if(sell > 0) logAction(`[営業] AIロボットが ${sell} 台売却されました。売上: +${(p * sell).toLocaleString()}円`);
-            }
-            if (stockCar > 0) {
-                let sell = Math.min(stockCar, salesCapacity); let p = Math.round(2500000 * priceMultiplier);
-                stockCar -= sell; salesCapacity -= sell; cash += (p * sell);
-                if(sell > 0) logAction(`[営業] 電気自動車が ${sell} 台売却されました。売上: +${(p * sell).toLocaleString()}円`);
-            }
-            if (stockPhone > 0) {
-                let sell = Math.min(stockPhone, salesCapacity); let p = Math.round(70000 * priceMultiplier);
-                stockPhone -= sell; salesCapacity -= sell; cash += (p * sell);
-                if(sell > 0) logAction(`[営業] スマホが ${sell} 台売却されました。売上: +${(p * sell).toLocaleString()}円`);
-            }
-
-            if (salesCapacity === 0 && (stockPhone > 0 || stockCar > 0 || stockRobot > 0 || stockRocket > 0)) {
-                logAction(`[警告] 営業スタッフの手が足りず、売り切れなかった在庫が倉庫に残っています！`);
-            }
-
-            let costRent = 150000;
-            let costSales = staffSales * 150000;
-            let costEng = staffEng * 250000;
-            let costSci = staffSci * 600000;
-            let totalExpenses = costRent + costSales + costEng + costSci;
+            logAction(`--- 【${gameData.term}ヶ月目 月次決算報告】 ---`);
             
-            cash -= totalExpenses;
-            logAction(`[財務] 今月の固定費引落: 計 -${totalExpenses.toLocaleString()}円`);
+            // 営業力とマーケティング認知度によるリアル販売枠
+            let maxSales = gameData.ssales * 3;
+            // 認知度(%)に応じて、実際にさばける上限が制限される超高難度化
+            let salesCapacity = Math.ceil(maxSales * (gameData.marketing / 100));
+            logAction(`[営業部] ブランド認知度(${gameData.marketing}%)により、今月の有効販売枠は ${salesCapacity} 個に制限されました（最大: ${maxSales}）`);
 
-            cash = cash - Math.round(loan * 0.005) + Math.round(deposit * 0.002);
+            let multHighTech = gameData.mult_t;
+            let multStandard = gameData.mult_c;
 
-            if (cash < 0) { alert("破産しました。ゲームオーバーです。"); window.location.href = "ceo_v2.html"; return; }
+            // 製品売却
+            if (gameData.srocket > 0) {
+                let sell = Math.min(gameData.srocket, salesCapacity); let p = Math.round(45000000 * multHighTech);
+                gameData.srocket -= sell; salesCapacity -= sell; gameData.cash += (p * sell);
+                if(sell > 0) logAction(`[営業] ロケットが ${sell} 機売却。売上: +${(p * sell).toLocaleString()}円`);
+            }
+            if (gameData.srobot > 0) {
+                let sell = Math.min(gameData.srobot, salesCapacity); let p = Math.round(10000000 * multHighTech);
+                gameData.srobot -= sell; salesCapacity -= sell; gameData.cash += (p * sell);
+                if(sell > 0) logAction(`[営業] AIロボットが ${sell} 台売却。売上: +${(p * sell).toLocaleString()}円`);
+            }
+            if (gameData.scar > 0) {
+                let sell = Math.min(gameData.scar, salesCapacity); let p = Math.round(2500000 * multStandard);
+                gameData.scar -= sell; salesCapacity -= sell; gameData.cash += (p * sell);
+                if(sell > 0) logAction(`[営業] 電気自動車が ${sell} 台売却。売上: +${(p * sell).toLocaleString()}円`);
+            }
+            if (gameData.sphone > 0) {
+                let sell = Math.min(gameData.sphone, salesCapacity); let p = Math.round(70000 * multStandard);
+                gameData.sphone -= sell; salesCapacity -= sell; gameData.cash += (p * sell);
+                if(sell > 0) logAction(`[営業] スマホが ${sell} 台売却。売上: +${(p * sell).toLocaleString()}円`);
+            }
 
+            // 倉庫維持費
+            let storageCost = (gameData.sphone * 5000) + (gameData.scar * 50000) + (gameData.srobot * 150000) + (gameData.srocket * 500000);
+            if (storageCost > 0) {
+                gameData.cash -= storageCost;
+                logAction(`[倉庫] 売れ残り在庫の維持管理コストが発生: -${storageCost.toLocaleString()}円`);
+            }
+
+            // 固定費人件費
+            let costRent = 150000;
+            let costSales = gameData.ssales * 150000;
+            let costEng = gameData.seng * 250000;
+            let costSci = gameData.ssci * 600000;
+            let totalExpenses = costRent + costSales + costEng + costSci;
+            gameData.cash -= totalExpenses;
+            logAction(`[財務] 固定費引落（家賃＋人件費）: 計 -${totalExpenses.toLocaleString()}円`);
+
+            // 金利
+            gameData.cash = gameData.cash - Math.round(gameData.loan * 0.005) + Math.round(gameData.deposit * 0.002);
+
+            // 認知度の自然減衰（毎月5%ダウン、最低5%）
+            gameData.marketing = Math.max(5, gameData.marketing - 5);
+            logAction(`[広報] 時間の経過により、ブランド認知度が 5% 下落しました。`);
+
+            // 破産判定と自動補填
+            if (gameData.cash < 0 && gameData.deposit > 0) {
+                let deficit = Math.abs(gameData.cash);
+                let brokenDeposit = Math.min(gameData.deposit, Math.ceil(deficit / 1000000) * 1000000);
+                gameData.deposit -= brokenDeposit;
+                gameData.cash += brokenDeposit;
+                logAction(`[警告] 現金枯渇！定期預金から ${brokenDeposit.toLocaleString()} 円が強制解約されました。`);
+            }
+            
+            if (gameData.cash < 0) {
+                alert("キャッシュが底をつき、不渡りを出しました。ゲームオーバーです。");
+                resetGame();
+                return;
+            }
+
+            if (gameData.cash >= 100000000) {
+                alert(`🎉 おめでとうございます！${gameData.term}ヶ月目に総キャッシュ1億円を突破！ゲームクリアです！`);
+                resetGame();
+                return;
+            }
+
+            if (gameData.term >= 24) {
+                alert(`⏳ タイムアップ！24ヶ月以内に1億円を達成できませんでした。ゲームオーバーです。`);
+                resetGame();
+                return;
+            }
+
+            // 景気変動イベント
             let rand = Math.random();
-            if (rand < 0.25) { newsText = "【テクノロジー大バブル到来！】ロボットとロケットの売価が【1.5倍】に高騰中！"; priceMultiplier = 1.5; } 
-            else if (rand < 0.50) { newsText = "【世界同時不況の波】市場崩壊により全製品の売価が【半分(0.5倍)】に大暴落！"; priceMultiplier = 0.5; } 
-            else { newsText = "特記すべき経済変動はありません。市場は安定しています。"; priceMultiplier = 1.0; }
+            if (rand < 0.20) { 
+                gameData.news = "【テクノロジー大バブル到来！】ロボットとロケットの売価が【1.5倍】に高騰中！"; 
+                gameData.mult_c = 1.0; gameData.mult_t = 1.5;
+            } else if (rand < 0.40) { 
+                gameData.news = "【世界同時不況の波】市場崩壊により全製品の売価が【半分(0.5倍)】に大暴落！"; 
+                gameData.mult_c = 0.5; gameData.mult_t = 0.5;
+            } else if (rand < 0.60) { 
+                gameData.news = "【新興国の猛追】安価なスマホ・EVが流入！スマホと自動車の価値が【0.3倍】にダウン！"; 
+                gameData.mult_c = 0.3; gameData.mult_t = 1.2;
+            } else { 
+                gameData.news = "特記すべき経済変動はありません。市場は安定しています。"; 
+                gameData.mult_c = 1.0; gameData.mult_t = 1.0;
+            }
 
-            term++; updateUI();
+            gameData.term++;
+            saveData();
+            updateUI();
         }
     </script>
 </head>
 <body onload="updateUI()">
-    <h1>👔 CEO総合統括本部（サイバーダークUI完全修復版）</h1>
+    <h1>👔 CEO総合統括本部 (Data Cloud v3)</h1>
+    <div class="mission-box">🎯 MISSION: 24ヶ月以内にキャッシュ1億円を達成せよ！(自動セーブ対応)</div>
     <div class="news-box">🚨 TOP NEWS ➔ <span id="news-display">読み込み中...</span></div>
+    
     <h3>📂 社内各部署への移動リンク</h3>
     <div class="btn-group" style="margin-bottom: 25px;">
-        <a id="lnk-bank" class="nav-btn btn-bank" href="bank_v2.html">🏦 中央第一銀行（財務窓口）へ</a>
-        <a id="lnk-business" class="nav-btn btn-business" href="business_v2.html">🏭 製造・事業部ルームへ</a>
-        <a id="lnk-hr" class="nav-btn btn-hr" href="hr_v2.html">👥 人事労務・採用ルームへ</a>
+        <a class="nav-btn btn-bank" href="bank_v2.html">🏦 財務銀行窓口</a>
+        <a class="nav-btn btn-business" href="business_v2.html">🏭 製造ライン</a>
+        <a class="nav-btn btn-hr" href="hr_v2.html">👥 人事労務本部</a>
+        <a class="nav-btn btn-marketing" href="marketing.html">📢 マーケティング広告部</a>
+        <a class="nav-btn btn-rnd" href="rnd.html">🧠 R&D研究開発部</a>
     </div>
+    
     <div class="grid">
         <div class="card">
             <h2>📊 会社基本情報（財務諸表）</h2>
-            <p><strong>経営期間:</strong> <span id="lbl-term">1</span> ヶ月目</p>
+            <p><strong>経営期間:</strong> <span id="lbl-term">1</span> / 24 ヶ月目</p>
             <p><strong>手元現金:</strong> <span id="lbl-cash" style="color:#00ff66; font-size:18px; font-weight:bold;">2,000,000</span> 円</p>
-            <p><strong>銀行借入金:</strong> <span id="lbl-loan" style="color:#ff3333;">0</span> 円 | <strong>定期預金:</strong> <span id="lbl-deposit" style="color:#3b82f6;">0</span> 円</p>
-            <hr style="border-color:#333;">
-            <p style="font-size:14px; background:#222; padding:8px; border-radius:4px; line-height:1.8;">
-                👥 <strong>現在の社内組織図:</strong><br>
-                ・💼 営業スタッフ: <span id="lbl-staff-sales" style="color:#ffea00; font-weight:bold;">1</span> 名<br>
-                ・🛠️ 製造エンジニア: <span id="lbl-staff-eng" style="color:#ffea00; font-weight:bold;">0</span> 名<br>
-                ・🧠 AI・宇宙科学者: <span id="lbl-staff-sci" style="color:#ffea00; font-weight:bold;">0</span> 名
-            </p>
-            <hr style="border-color:#333;">
-            <p><strong>📱 スマホ在庫:</strong> <span id="lbl-stock-phone">0</span> 台 | <strong>🚗 自動車在庫:</strong> <span id="lbl-stock-car">0</span> 台</p>
-            <p><strong>🤖 ロボ在庫:</strong> <span id="lbl-stock-robot">0</span> 台 | <strong>🚀 ロケット在庫:</strong> <span id="lbl-stock-rocket">0</span> 機</p>
-        </div>
-        <div class="card">
-            <h2>⏱ 経営決算コマンド</h2>
-            <button onclick="nextMonth()" class="danger">⏱ 決算を行い、翌月へ進む</button>
-        </div>
-    </div>
-    <div class="card" style="margin-top:20px;">
-        <h2>📜 CEO業務日誌</h2>
-        <div id="log" class="log-box">システムが正常に起動しました。</div>
-    </div>
-</body>
-</html>
