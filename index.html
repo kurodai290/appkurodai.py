@@ -15,14 +15,18 @@
         .btn-hr { background: #eab308; color: #000; }
         .btn-marketing { background: #ec4899; }
         .btn-rnd { background: #06b6d4; }
-        button.danger { background: #ef4444; color: #fff; border: none; padding: 15px 30px; font-weight: bold; border-radius: 4px; cursor: pointer; font-size: 16px; width: 100%; }
+        button.danger { background: #ef4444; color: #fff; border: none; padding: 15px 30px; font-weight: bold; border-radius: 4px; cursor: pointer; font-size: 16px; width: 100%; transition: 0.1s; }
         button.danger:hover { background: #f87171; }
-        .log-box { background: #000; color: #00ff66; padding: 10px; height: 150px; overflow-y: scroll; font-size: 13px; border: 1px solid #333; margin-top: 10px; }
+        /* 💡 新しいスキップボタンのスタイル */
+        button.skip-btn { background: #10b981; color: #fff; border: none; padding: 12px 18px; font-weight: bold; border-radius: 4px; cursor: pointer; font-size: 14px; flex: 1; transition: 0.1s; }
+        button.skip-btn:hover { background: #34d399; }
+        .log-box { background: #000; color: #00ff66; padding: 10px; height: 180px; overflow-y: scroll; font-size: 13px; border: 1px solid #333; margin-top: 10px; }
         .news-box { background: #ffea00; color: #000; padding: 12px; border-radius: 4px; font-weight: bold; margin-bottom: 20px; border-left: 5px solid #ffaa00; font-size: 15px; }
         .mission-box { background: #1e3a8a; color: #fff; padding: 10px; border-radius: 4px; font-weight: bold; margin-bottom: 15px; border-left: 5px solid #3b82f6; }
     </style>
     <script>
         let gameData;
+        let isGameOver = false; // 連続処理中のストッパー
         
         function loadData() {
             let rawData = localStorage.getItem('corp_game_data');
@@ -85,97 +89,113 @@
             updateUI();
         }
 
-        function nextMonth() {
-            logAction(`--- 【${gameData.term}ヶ月目 月次決算報告】 ---`);
+        // 💡 任意の位置まで月数をまとめてスキップする関数
+        function skipMonths(monthsToSkip) {
+            isGameOver = false;
+            logAction(`🔮 <strong>【システム】 ${monthsToSkip}ヶ月の高速オート経営スキップを実行します...</strong>`);
+            
+            for (let i = 0; i < monthsToSkip; i++) {
+                if (isGameOver) break;
+                executeNextMonthLogic(true); // サイレントモードで実行
+            }
+            
+            updateUI();
+            saveData();
+        }
+
+        // 月次決算のコアロジック
+        function executeNextMonthLogic(isSkipMode = false) {
+            if (!isSkipMode) logAction(`--- 【${gameData.term}ヶ月目 月次決算報告】 ---`);
+            
             let maxSales = gameData.ssales * 3;
             let salesCapacity = Math.ceil(maxSales * (gameData.marketing / 100));
-            logAction(`[営業部] ブランド認知度(${gameData.marketing}%)により有効販売枠は ${salesCapacity} 個に制限されました`);
+            if (!isSkipMode) logAction(`[営業部] ブランド認知度(${gameData.marketing}%)により有効販売枠は ${salesCapacity} 個に制限されました`);
 
+            // 製品の売却
             if (gameData.srocket > 0) {
                 let sell = Math.min(gameData.srocket, salesCapacity); let p = Math.round(45000000 * gameData.mult_t);
                 gameData.srocket -= sell; salesCapacity -= sell; gameData.cash += (p * sell);
-                if(sell > 0) logAction(`[営業] ロケットが ${sell} 機売却。売上: +${(p * sell).toLocaleString()}円`);
+                if(sell > 0 && !isSkipMode) logAction(`[営業] ロケットが ${sell} 機売却。売上: +${(p * sell).toLocaleString()}円`);
             }
             if (gameData.srobot > 0) {
                 let sell = Math.min(gameData.srobot, salesCapacity); let p = Math.round(10000000 * gameData.mult_t);
                 gameData.srobot -= sell; salesCapacity -= sell; gameData.cash += (p * sell);
-                if(sell > 0) logAction(`[営業] AIロボットが ${sell} 台売却。売上: +${(p * sell).toLocaleString()}円`);
+                if(sell > 0 && !isSkipMode) logAction(`[営業] AIロボットが ${sell} 台売却。売上: +${(p * sell).toLocaleString()}円`);
             }
             if (gameData.scar > 0) {
                 let sell = Math.min(gameData.scar, salesCapacity); let p = Math.round(2500000 * gameData.mult_c);
                 gameData.scar -= sell; salesCapacity -= sell; gameData.cash += (p * sell);
-                if(sell > 0) logAction(`[営業] 電気自動車が ${sell} 台売却. 売上: +${(p * sell).toLocaleString()}円`);
+                if(sell > 0 && !isSkipMode) logAction(`[営業] 電気自動車が ${sell} 台売却。売上: +${(p * sell).toLocaleString()}円`);
             }
             if (gameData.sphone > 0) {
                 let sell = Math.min(gameData.sphone, salesCapacity); let p = Math.round(70000 * gameData.mult_c);
                 gameData.sphone -= sell; salesCapacity -= sell; gameData.cash += (p * sell);
-                if(sell > 0) logAction(`[営業] スマホが ${sell} 台売却。売上: +${(p * sell).toLocaleString()}円`);
+                if(sell > 0 && !isSkipMode) logAction(`[営業] スマホが ${sell} 台売却。売上: +${(p * sell).toLocaleString()}円`);
             }
 
+            // 倉庫コスト
             let storageCost = (gameData.sphone * 5000) + (gameData.scar * 50000) + (gameData.srobot * 150000) + (gameData.srocket * 500000);
             if (storageCost > 0) {
                 gameData.cash -= storageCost;
-                logAction(`[倉庫] 在庫維持コスト: -${storageCost.toLocaleString()}円`);
+                if (!isSkipMode) logAction(`[倉庫] 在庫維持コスト: -${storageCost.toLocaleString()}円`);
             }
 
+            // 固定費計算
             let totalExpenses = 150000 + (gameData.ssales * 150000) + (gameData.seng * 250000) + (gameData.ssci * 600000);
             gameData.cash -= totalExpenses;
             gameData.cash = gameData.cash - Math.round(gameData.loan * 0.005) + Math.round(gameData.deposit * 0.002);
             gameData.marketing = Math.max(5, gameData.marketing - 5);
 
+            // 救済システム
             if (gameData.cash < 0 && gameData.deposit > 0) {
                 let brokenDeposit = Math.min(gameData.deposit, Math.ceil(Math.abs(gameData.cash) / 1000000) * 1000000);
                 gameData.deposit -= brokenDeposit; gameData.cash += brokenDeposit;
+                if (!isSkipMode) logAction(`[警告] 資金ショート補填のため定期預金から ${brokenDeposit.toLocaleString()} 円を自動解約。`);
             }
             
-            if (gameData.cash < 0) { alert("倒産しました。"); resetGame(); return; }
-            if (gameData.cash >= 100000000) { alert("クリア！"); resetGame(); return; }
-            if (gameData.term >= 24) { alert("タイムアップ！"); resetGame(); return; }
+            // 勝敗判定
+            if (gameData.cash < 0) {
+                alert(`🚨 【倒産】 ${gameData.term}ヶ月目に資金ショートしました。ゲームオーバーです。`);
+                isGameOver = true;
+                resetGame();
+                return;
+            }
+            if (gameData.cash >= 100000000) {
+                alert(`🎉 【クリア】 ${gameData.term}ヶ月目に目標の1億円を達成しました！経営の天才です！`);
+                isGameOver = true;
+                resetGame();
+                return;
+            }
+            if (gameData.term >= 24) {
+                alert("⏳ 【タイムアップ】 24ヶ月以内に1億円を達成できませんでした。ゲームオーバーです。");
+                isGameOver = true;
+                resetGame();
+                return;
+            }
 
+            // 経済イベントの抽選
             let rand = Math.random();
             if (rand < 0.20) { gameData.news = "【バブル到来】ロボ・ロケ売価1.5倍！"; gameData.mult_c = 1.0; gameData.mult_t = 1.5; } 
             else if (rand < 0.40) { gameData.news = "【世界大不況】全売価が0.5倍に暴落！"; gameData.mult_c = 0.5; gameData.mult_t = 0.5; } 
             else { gameData.news = "市場は安定しています。"; gameData.mult_c = 1.0; gameData.mult_t = 1.0; }
 
             gameData.term++;
-            saveData();
+        }
+
+        // 通常の「1ヶ月進む」ボタン用
+        function nextMonth() {
+            executeNextMonthLogic(false);
             updateUI();
+            saveData();
         }
     </script>
 </head>
 <body onload="initPage()">
 
-    <!-- 💡 タイトルエリア（ここまでは映っています） -->
     <h1>👔 CEO総合統括本部 (Data Cloud v3)</h1>
-    
-    <!-- 💡 ミッションとニュース（ここから下が消えていたのでタグを徹底補強） -->
     <div class="mission-box">🎯 MISSION: 24ヶ月以内にキャッシュ1億円を達成せよ！</div>
     <div class="news-box">🚨 TOP NEWS ➔ <span id="news-display">読み込み中...</span></div>
     
     <h3>📂 社内各部署への移動リンク</h3>
     <div class="btn-group" style="margin-bottom: 25px;">
         <a class="nav-btn btn-bank" href="bank_v2.html">🏦 財務銀行窓口</a>
-        <a class="nav-btn btn-business" href="business_v2.html">🏭 製造ライン</a>
-        <a class="nav-btn btn-hr" href="hr_v2.html">👥 人事労務本部</a>
-        <a class="nav-btn btn-marketing" href="marketing.html">📢 マーケティング広告部</a>
-        <a class="nav-btn btn-rnd" href="rnd.html">🧠 R&D研究開発部</a>
-    </div>
-    
-    <div class="grid">
-        <div class="card">
-            <h2>📊 会社基本情報（財務諸表）</h2>
-            <p><strong>経営期間:</strong> <span id="lbl-term">1</span> / 24 ヶ月目</p>
-            <p><strong>手元現金:</strong> <span id="lbl-cash" style="color:#00ff66; font-size:18px; font-weight:bold;">2,000,000</span> 円</p>
-            <p><strong>銀行借入金:</strong> <span id="lbl-loan" style="color:#ff3333;">0</span> 円 | <strong>定期預金:</strong> <span id="lbl-deposit" style="color:#3b82f6;">0</span> 円</p>
-            <p><strong>市場認知度:</strong> <span id="lbl-marketing" style="color:#ec4899; font-weight:bold;">20</span> %</p>
-            <br>
-            <button class="danger" onclick="nextMonth()">⏭️ 今月の経営を実行し、翌月へ進む</button>
-            <br>
-            <button onclick="resetGame()" style="background:#555; color:#fff; border:none; padding:5px 10px; margin-top:20px; cursor:pointer; border-radius:3px; font-size:11px;">⚠️ データを初期化してやり直す</button>
-        </div>
-        
-        <div class="card">
-            <h2>📦 各部スタック・倉庫状況</h2>
-            <p>💼 営業: <span id="lbl-staff-sales">1</span>名 | 🛠️ 技術: <span id="lbl-staff-eng">0</span>名 | 🧠 科学: <span id="lbl-staff-sci">0</span>名</p>
-            <hr style="border-color:#333;">
-            <p>📱 スマホ在庫: <span id="lbl-stock-phone">0</span> 台 | 🚗 EV在庫: <span id="lbl-stock-car">0</span> 台</p>
