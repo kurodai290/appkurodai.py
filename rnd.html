@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>統合経営システム - R&D研究開発部</title>
+    <style>
+        body { background: #121214; color: #e0e0e6; font-family: 'Courier New', Courier, monospace; padding: 20px; line-height: 1.6; }
+        h1, h2, h3 { color: #06b6d4; border-bottom: 1px solid #333; padding-bottom: 5px; margin-top: 15px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+        .card { background: #1a1a24; border: 1px solid #2d2d3d; padding: 15px; border-radius: 5px; }
+        button { background: #06b6d4; color: #fff; border: none; padding: 12px 18px; font-weight: bold; border-radius: 4px; cursor: pointer; transition: 0.1s; width: 100%; }
+        button:hover { background: #22d3ee; }
+        button:disabled { background: #155e75; color: #083344; cursor: not-allowed; }
+        .nav-link { background: #22c55e; color: black; padding: 12px 24px; text-decoration: none; font-weight: bold; border-radius: 4px; display: inline-block; margin-bottom: 20px; }
+        .sub-text { font-size: 11px; color: #aaa; display: block; margin-top: 2px; }
+        .status-badge { display: inline-block; padding: 2px 6px; font-size: 11px; font-weight: bold; border-radius: 3px; margin-top: 5px; }
+        .badge-locked { background: #ef4444; color: white; }
+        .badge-unlocked { background: #22c55e; color: black; }
+    </style>
+    <script>
+        let gameData = JSON.parse(localStorage.getItem('corp_game_data'));
+
+        function updateUI() {
+            document.getElementById("lbl-cash").innerText = gameData.cash.toLocaleString();
+
+            // EV組立技術
+            if (gameData.tech_car) {
+                document.getElementById("btn-tech-car").disabled = true;
+                document.getElementById("btn-tech-car").innerText = "研究完了";
+                document.getElementById("badge-car").className = "status-badge badge-unlocked";
+                document.getElementById("badge-car").innerText = "開発可能";
+            } else {
+                document.getElementById("badge-car").className = "status-badge badge-locked";
+                document.getElementById("badge-car").innerText = "未認証";
+            }
+
+            // AIロボティクス技術（EVが前提）
+            if (!gameData.tech_car) {
+                document.getElementById("btn-tech-robot").disabled = true;
+                document.getElementById("btn-tech-robot").innerText = "🔒 前提技術が必要";
+            } else if (gameData.tech_robot) {
+                document.getElementById("btn-tech-robot").disabled = true;
+                document.getElementById("btn-tech-robot").innerText = "研究完了";
+                document.getElementById("badge-robot").className = "status-badge badge-unlocked";
+                document.getElementById("badge-robot").innerText = "開発可能";
+            } else {
+                document.getElementById("btn-tech-robot").disabled = false;
+                document.getElementById("badge-robot").className = "status-badge badge-locked";
+                document.getElementById("badge-robot").innerText = "未認証";
+            }
+
+            // 宇宙ロケット工学技術（ロボットが前提）
+            if (!gameData.tech_robot) {
+                document.getElementById("btn-tech-rocket").disabled = true;
+                document.getElementById("btn-tech-rocket").innerText = "🔒 前提技術が必要";
+            } else if (gameData.tech_rocket) {
+                document.getElementById("btn-tech-rocket").disabled = true;
+                document.getElementById("btn-tech-rocket").innerText = "研究完了";
+                document.getElementById("badge-rocket").className = "status-badge badge-unlocked";
+                document.getElementById("badge-rocket").innerText = "開発可能";
+            } else {
+                document.getElementById("btn-tech-rocket").disabled = false;
+                document.getElementById("badge-rocket").className = "status-badge badge-locked";
+                document.getElementById("badge-rocket").innerText = "未認証";
+            }
+
+            localStorage.setItem('corp_game_data', JSON.stringify(gameData));
+        }
+
+        function unlockTech(techKey, cost) {
+            if (gameData.cash < cost) { alert("研究開発資金（キャッシュ）が足りません！"); return; }
+            gameData.cash -= cost;
+            gameData[techKey] = true;
+            alert("新規テクノロジーの特許・製造ライセンスの取得に成功しました！");
+            updateUI();
+        }
+    </script>
+</head>
+<body onload="updateUI()">
+    <h1>🧠 R&Dテクノロジー最先端研究開発部</h1>
+    <a class="nav-link" href="index.html">🏢 CEO室（総合統括本部）に戻る</a>
+    
+    <div class="card" style="margin-bottom: 20px; background: #111;">
+        <h3>📊 開発資金プール</h3>
+        <p>利用可能キャッシュ: <strong id="lbl-cash">0</strong> 円</p>
+        <span class="sub-text" style="color:#888;">※最先端技術を解放していくことで、高利益率な次世代製品の製造ラインが稼働可能になります。</span>
+    </div>
+
+    <div class="grid">
+        <div class="card">
+            <h2>🚗 EV組立技術</h2>
+            <p>自動車製造ラインを解放するための基盤特許技術です。</p>
+            <span class="sub-text">研究費用: 150万円</span>
+            <div id="badge-car" class="status-badge"></div>
+            <br><br>
+            <button id="btn-tech-car" onclick="unlockTech('tech_car', 1500000)">技術投資を行う</button>
+        </div>
+        <div class="card">
+            <h2>🤖 AIロボティクス</h2>
+            <p>人型ロボットラインを解放します。(※要：EV組立技術)</p>
+            <span class="sub-text">研究費用: 500万円</span>
+            <div id="badge-robot" class="status-badge"></div>
+            <br><br>
+            <button id="btn-tech-robot" onclick="unlockTech('tech_robot', 5000000)">技術投資を行う</button>
+        </div>
+        <div class="card">
+            <h2>🚀 宇宙ロケット工学</h2>
+            <p>最高難度の宇宙開発ラインを解放します。(※要：AIロボティクス)</p>
+            <span class="sub-text">研究費用: 2000万円</span>
+            <div id="badge-rocket" class="status-badge"></div>
+            <br><br>
+            <button id="btn-tech-rocket" onclick="unlockTech('tech_rocket', 20000000)">技術投資を行う</button>
+        </div>
+    </div>
+</body>
+</html>
