@@ -1,6 +1,3 @@
-
-
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -11,85 +8,91 @@
         h1, h2, h3 { color: #a855f7; border-bottom: 1px solid #333; padding-bottom: 5px; margin-top: 15px; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .card { background: #1a1a24; border: 1px solid #2d2d3d; padding: 15px; border-radius: 5px; }
-        .btn-group { margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap; }
-        button { background: #a855f7; color: #fff; border: none; padding: 12px 18px; font-weight: bold; border-radius: 4px; cursor: pointer; transition: 0.1s; }
+        button { background: #a855f7; color: #fff; border: none; padding: 12px 18px; font-weight: bold; border-radius: 4px; cursor: pointer; transition: 0.1s; width: 100%; }
         button:hover { background: #c084fc; }
-        button:active { background: #e9d5ff; color: #000; }
+        button:disabled { background: #444; color: #888; cursor: not-allowed; }
         .nav-link { background: #22c55e; color: black; padding: 12px 24px; text-decoration: none; font-weight: bold; border-radius: 4px; display: inline-block; margin-bottom: 20px; }
-        .nav-link:hover { background: #4ade80; }
         .sub-text { font-size: 11px; color: #aaa; display: block; margin-top: 2px; }
-        .error-text { color: #ef4444; font-size: 11px; font-weight: bold; display: block; margin-top: 2px; }
-        .success-text { color: #22c55e; font-size: 11px; font-weight: bold; display: block; margin-top: 2px; }
+        .lock-text { color: #ef4444; font-size: 12px; font-weight: bold; display: block; margin-top: 5px; }
+        .status-text { font-size: 12px; color: #eab308; font-weight: bold; display: block; margin-top: 5px; min-height: 18px; }
     </style>
     <script>
-        let params = new URLSearchParams(window.location.search);
-        let cash = params.get('cash') ? parseInt(params.get('cash')) : 2000000;
-        let loan = params.get('loan') ? parseInt(params.get('loan')) : 0;
-        let deposit = params.get('deposit') ? parseInt(params.get('deposit')) : 0;
-        
-        let stockPhone = params.get('sphone') ? parseInt(params.get('sphone')) : 0;
-        let stockCar = params.get('scar') ? parseInt(params.get('scar')) : 0;
-        let stockRobot = params.get('srobot') ? parseInt(params.get('srobot')) : 0;
-        let stockRocket = params.get('srocket') ? parseInt(params.get('srocket')) : 0;
-        
-        let staffSales = params.get('ssales') ? parseInt(params.get('ssales')) : 1;
-        let staffEng = params.get('seng') ? parseInt(params.get('seng')) : 0;
-        let staffSci = params.get('ssci') ? parseInt(params.get('ssci')) : 0;
-        
-        let term = params.get('term') ? parseInt(params.get('term')) : 1;
-        let newsText = params.get('news') ? params.get('news') : "";
-        let priceMultiplier = params.get('mult') ? parseFloat(params.get('mult')) : 1.0;
+        let gameData = JSON.parse(localStorage.getItem('corp_game_data'));
 
         function updateUI() {
-            document.getElementById("lbl-cash").innerText = cash.toLocaleString();
-            document.getElementById("lbl-staff-eng").innerText = staffEng;
-            document.getElementById("lbl-staff-sci").innerText = staffSci;
+            document.getElementById("lbl-cash").innerText = gameData.cash.toLocaleString();
+            document.getElementById("lbl-staff-eng").innerText = gameData.seng;
+            document.getElementById("lbl-staff-sci").innerText = gameData.ssci;
             
-            document.getElementById("lbl-stock-phone").innerText = stockPhone;
-            document.getElementById("lbl-stock-car").innerText = stockCar;
-            document.getElementById("lbl-stock-robot").innerText = stockRobot;
-            document.getElementById("lbl-stock-rocket").innerText = stockRocket;
+            document.getElementById("lbl-stock-phone").innerText = gameData.sphone;
+            document.getElementById("lbl-stock-car").innerText = gameData.scar;
+            document.getElementById("lbl-stock-robot").innerText = gameData.srobot;
+            document.getElementById("lbl-stock-rocket").innerText = gameData.srocket;
+
+            // 💡 難易度アップ：R&D（技術開発）が完了していない製品はボタンを完全ロック
+            if (!gameData.tech_car) { document.getElementById("btn-car").disabled = true; document.getElementById("lock-car").innerText = "🔒 R&D室でEV開発ライセンスの解放が必要です"; }
+            if (!gameData.tech_robot) { document.getElementById("btn-robot").disabled = true; document.getElementById("lock-robot").innerText = "🔒 R&D室でロボット開発ライセンスの解放が必要です"; }
+            if (!gameData.tech_rocket) { document.getElementById("btn-rocket").disabled = true; document.getElementById("lock-rocket").innerText = "🔒 R&D室でロケット開発ライセンスの解放が必要です"; }
+
+            localStorage.setItem('corp_game_data', JSON.stringify(gameData));
+        }
+
+        function processManufacturing(btnId, statusId, cost, buildTime, successCallback) {
+            let btn = document.getElementById(btnId);
+            let status = document.getElementById(statusId);
             
-            // 🏢 【大修正】すべての変数を漏らさずCEO室に戻します
-            document.getElementById("lnk-to-ceo").href = `index.html?cash=${cash}&loan=${loan}&deposit=${deposit}&sphone=${stockPhone}&scar=${stockCar}&srobot=${stockRobot}&srocket=${stockRocket}&ssales=${staffSales}&seng=${staffEng}&ssci=${staffSci}&term=${term}&news=${encodeURIComponent(newsText)}&mult=${priceMultiplier}`;
+            if (gameData.cash < cost) { alert("製造資金（キャッシュ）が足りません！"); return; }
+
+            gameData.cash -= cost;
+            btn.disabled = true;
+            updateUI();
+
+            let timeLeft = buildTime;
+            status.innerText = `⏳ 製造中... (残り ${timeLeft}秒)`;
+
+            let timer = setInterval(() => {
+                timeLeft--;
+                if (timeLeft > 0) {
+                    status.innerText = `⏳ 製造中... (残り ${timeLeft}秒)`;
+                } else {
+                    clearInterval(timer);
+                    status.innerText = "✅ 製造完了！";
+                    successCallback();
+                    btn.disabled = false;
+                    updateUI();
+                    setTimeout(() => { if(status.innerText === "✅ 製造完了！") status.innerText = ""; }, 2000);
+                }
+            }, 1000);
         }
 
         function makePhone() {
-            if (staffEng >= 1) {
-                if (cash >= 30000) { cash -= 30000; stockPhone++; updateUI(); } 
-                else { alert("現金が足りません！"); }
-            } else { alert("エンジニアが足りません！"); }
+            if (gameData.seng >= 1) { processManufacturing("btn-phone", "status-phone", 30000, 2, () => { gameData.sphone++; }); } 
+            else { alert("製造エンジニアが足りません！"); }
         }
 
         function makeCar() {
-            if (staffEng >= 3) {
-                if (cash >= 1000000) { cash -= 1000000; stockCar++; updateUI(); } 
-                else { alert("現金が足りません！"); }
-            } else { alert("エンジニアが最低3名必要です！"); }
+            if (gameData.seng >= 3) { processManufacturing("btn-car", "status-car", 1000000, 5, () => { gameData.scar++; }); } 
+            else { alert("エンジニアが最低3名必要です！"); }
         }
 
         function makeRobot() {
-            if (staffSci >= 2 && staffEng >= 4) {
-                if (cash >= 4000000) { cash -= 4000000; stockRobot++; updateUI(); } 
-                else { alert("現金が足りません！"); }
-            } else { alert("科学者2名＋エンジニア4名が必要です！"); }
+            if (gameData.ssci >= 2 && gameData.seng >= 4) { processManufacturing("btn-robot", "status-robot", 4000000, 10, () => { gameData.srobot++; }); } 
+            else { alert("科学者2名＋エンジニア4名が必要です！"); }
         }
 
         function makeRocket() {
-            if (staffSci >= 8 && staffEng >= 10) {
-                if (cash >= 15000000) { cash -= 15000000; stockRocket++; updateUI(); } 
-                else { alert("現金が足りません！"); }
-            } else { alert("科学者8名＋エンジニア10名が必要です！"); }
+            if (gameData.ssci >= 8 && gameData.seng >= 10) { processManufacturing("btn-rocket", "status-rocket", 15000000, 20, () => { gameData.srocket++; }); } 
+            else { alert("科学者8名＋エンジニア10名が必要です！"); }
         }
     </script>
 </head>
 <body onload="updateUI()">
-    <h1>🏭 専門製造ライン（4大事業完全大復活ライン）</h1>
-    <a id="lnk-to-ceo" class="nav-link" href="ceo_v2.html">🏢 CEO室（総合統括本部）に戻る</a>
+    <h1>🏭 専門製造ライン（技術認証ライセンス連動版）</h1>
+    <a class="nav-link" href="index.html">🏢 CEO室（総合統括本部）に戻る</a>
     
     <div class="card" style="margin-bottom: 20px; background: #111;">
         <h3>📊 工場配置可能メンバー一覧</h3>
-        <p>利用可能キャッシュ: <strong id="lbl-cash">2,000,000</strong> 円</p>
+        <p>利用可能キャッシュ: <strong id="lbl-cash">0</strong> 円</p>
         <p>🛠️ 製造エンジニア数: <strong id="lbl-staff-eng">0</strong> 名 | 🧠 AI・宇宙科学者数: <strong id="lbl-staff-sci">0</strong> 名</p>
     </div>
 
@@ -97,30 +100,33 @@
         <div class="card">
             <h2>📱 モバイル製品ライン</h2>
             <p>現在の倉庫在庫: <strong id="lbl-stock-phone">0</strong> 台</p>
-            <span class="sub-text">・コスト: 3万 | 売価: 7万</span>
-            <span class="success-text">✔ 条件: エンジニア1名以上</span>
-            <button onclick="makePhone()">スマートフォンを製造 (連打可)</button>
+            <span class="sub-text">・コスト: 3万 | 売価: 7万 | ⏳ 時間: 2秒</span>
+            <button id="btn-phone" onclick="makePhone()">スマートフォンを製造</button>
+            <div id="status-phone" class="status-text"></div>
         </div>
         <div class="card">
             <h2>🚗 次世代EV組立ライン</h2>
             <p>現在の倉庫在庫: <strong id="lbl-stock-car">0</strong> 台</p>
-            <span class="sub-text">・コスト: 100万 | 売価: 250万</span>
-            <span class="error-text">⚠ 条件: エンジニア最低【3名】</span>
-            <button onclick="makeCar()">電気自動車(EV)を製造 (連打可)</button>
+            <span class="sub-text">・コスト: 100万 | 売価: 250万 | ⏳ 時間: 5秒</span>
+            <button id="btn-car" onclick="makeCar()">電気自動車(EV)を製造</button>
+            <div id="lock-car" class="lock-text"></div>
+            <div id="status-car" class="status-text"></div>
         </div>
         <div class="card">
             <h2>🤖 人型AIロボットライン</h2>
             <p>現在の倉庫在庫: <strong id="lbl-stock-robot">0</strong> 台</p>
-            <span class="sub-text">・コスト: 400万 | 通常売価: 1000万</span>
-            <span class="error-text">⚠ 条件: 科学者2名 ＋ エンジニア4名</span>
-            <button onclick="makeRobot()">AIロボットを製造 (連打可)</button>
+            <span class="sub-text">・コスト: 400万 | 通常売価: 1000万 | ⏳ 時間: 10秒</span>
+            <button id="btn-robot" onclick="makeRobot()">AIロボットを製造</button>
+            <div id="lock-robot" class="lock-text"></div>
+            <div id="status-robot" class="status-text"></div>
         </div>
         <div class="card">
             <h2>🚀 次世代ロケット開発ライン</h2>
             <p>現在の倉庫在庫: <strong id="lbl-stock-rocket">0</strong> 機</p>
-            <span class="sub-text">・コスト: 1500万 | 通常売価: 4500万</span>
-            <span class="error-text">⚠ 条件: 科学者8名 ＋ エンジニア10名</span>
-            <button onclick="makeRocket()">宇宙ロケットを開発 (連打可)</button>
+            <span class="sub-text">・コスト: 1500万 | 通常売価: 4500万 | ⏳ 時間: 20秒</span>
+            <button id="btn-rocket" onclick="makeRocket()">宇宙ロケットを開発</button>
+            <div id="lock-rocket" class="lock-text"></div>
+            <div id="status-rocket" class="status-text"></div>
         </div>
     </div>
 </body>
