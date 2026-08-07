@@ -1,44 +1,50 @@
-            if (gameData.cash < 0) {
-                alert(`🚨 【倒産】 資金がショートしました。経営破綻です。`);
-                isGameOver = true;
-                resetGame();
-                return;
-            }
-            gameData.term += 1;
-        }
-        window.onload = initPage;
-    </script>
-</head>
-<body>
-    <h1>🏢 統合経営システム - CEO室</h1>
-    <div class="news-box">📢 経済ニュース: <span id="news-display">-</span></div>
-    
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>CEO室</title>
+<style>body{background:#121214;color:#e0e0e6;font-family:monospace;padding:15px;}.card{background:#1a1a24;border:1px solid #2d2d3d;padding:12px;margin-bottom:12px;border-radius:5px;}.btn{background:#3b82f6;color:#fff;padding:8px 12px;border:none;cursor:pointer;border-radius:4px;margin:2px;text-decoration:none;display:inline-block;}.next{background:#ef4444;width:100%;font-weight:bold;}.skip{background:#10b981;}</style>
+<script>
+let d;
+function load(){try{d=JSON.parse(localStorage.getItem('corp_game_data'));if(!d||!('tech_car' in d))throw 1;}catch(e){d={cash:2000000,loan:0,deposit:0,sphone:0,scar:0,srobot:0,srocket:0,ssales:1,seng:0,ssci:0,term:1,news:"安定",mult_c:1,mult_t:1,marketing:20,tech_car:!1,tech_robot:!1,tech_rocket:!1};save();}}
+function save(){localStorage.setItem('corp_game_data',JSON.stringify(d));}
+function set(id,v){let el=document.getElementById(id);if(el)el.innerText=v;}
+function view(){set("t",d.term);set("c",d.cash.toLocaleString());set("l",d.loan.toLocaleString());set("dp",d.deposit.toLocaleString());set("ss",d.ssales);set("se",d.seng);set("sc",d.ssci);set("sp",d.sphone);set("sr",d.scar);set("sb",d.srobot);set("sk",d.srocket);set("m",d.marketing);set("n",d.news);}
+function reset(){localStorage.removeItem('corp_game_data');window.location.reload();}
+function skip(m){
+for(let i=0;i<m;i++){
+let cap=Math.ceil((d.ssales*3)*(d.marketing/100));
+let items=[{k:'srocket',p:45000000,m:'mult_t'},{k:'srobot',p:10000000,m:'mult_t'},{k:'scar',p:2500000,m:'mult_c'},{k:'sphone',p:70000,m:'mult_c'}];
+items.forEach(it=>{let s=Math.min(d[it.k],cap);d[it.k]-=s;cap-=s;d.cash+=Math.round(it.p*d[it.m])*s;});
+d.cash-=(d.sphone*5000+d.scar*50000+d.srobot*150000+d.srocket*500000);
+d.cash-=(150000+d.ssales*150000+d.seng*250000+d.ssci*600000);
+d.cash=d.cash-Math.round(d.loan*.005)+Math.round(d.deposit*.002);d.marketing=Math.max(5,d.marketing-5);
+if(d.cash<0&&d.deposit > 0){let b=Math.min(d.deposit,Math.ceil(Math.abs(d.cash)/1000000)*1000000);d.deposit-=b;d.cash+=b;}
+if(d.cash<0){alert("破産しました。");reset();return;}
+if(d.cash>=100000000){alert("1億円達成！クリア！");reset();return;}
+if(d.term>=24){alert("24ヶ月終了。ゲームオーバー");reset();return;}
+let r=Math.random();if(r<.2){d.news="【バブル】ロボロケ1.5倍！";d.mult_c=1;d.mult_t=1.5;}else if(r<.4){d.news="【不況】全製品0.5倍！";d.mult_c=.5;d.mult_t=.5;}else{d.news="安定しています。";d.mult_c=1;d.mult_t=1;}d.term++;
+}view();save();
+}
+</script></head>
+<body onload="load();view();">
+    <h2>👔 CEO室 (v3 Micro)</h2>
+    <div class="card" style="background:#1e3a8a;">🎯 24ヶ月以内に1億円達成せよ</div>
+    <div class="card" style="background:#ffea00;color:#000;">📢 景気: <span id="n">..</span></div>
     <div class="card">
-        <h3>📊 財務・ステータス (第 <span id="lbl-term">1</span> 期)</h3>
-        <p>現金残高: <span id="lbl-cash">0</span> 円</p>
-        <p>銀行借入: <span id="lbl-loan">0</span> 円 / 銀行預金: <span id="lbl-deposit">0</span> 円</p>
-        <p>認知度（マーケティング）: <span id="lbl-marketing">0</span> %</p>
+        <a class="btn" href="bank_v2.html" style="background:#3b82f6;">🏦 銀行</a>
+        <a class="btn" href="business_v2.html" style="background:#a855f7;">🏭 製造</a>
+        <a class="btn" href="hr_v2.html" style="background:#eab308;color:#000;">👥 人事</a>
+        <a class="btn" href="marketing.html" style="background:#ec4899;">📢 広告</a>
+        <a class="btn" href="rnd.html" style="background:#06b6d4;">🧠 研究</a>
     </div>
-
     <div class="card">
-        <h3>👥 人員配置</h3>
-        <p>営業部: <span id="lbl-staff-sales">0</span> 名 / 開発部: <span id="lbl-staff-eng">0</span> 名 / 研究部: <span id="lbl-staff-sci">0</span> 名</p>
+        <h3>📊 財務諸表</h3>
+        <p>期間: <span id="t">1</span> / 24 ヶ月 | 現金: <span id="c" style="color:#00ff66;font-weight:bold;">0</span> 円</p>
+        <p>借入: <span id="l">0</span> 円 | 預金: <span id="dp">0</span> 円 | 認知度: <span id="m">20</span> %</p><br>
+        <button class="btn next" onclick="skip(1)">⏭️ 1ヶ月進める（決算）</button>
+        <div style="display:flex;"><button class="btn skip" onclick="skip(3)" style="flex:1;">⏩ 3ヶ月</button><button class="btn skip" onclick="skip(6)" style="flex:1;">⏩ 6ヶ月</button></div>
     </div>
-
     <div class="card">
-        <h3>📦 製品在庫</h3>
-        <p>スマホ: <span id="lbl-stock-phone">0</span> 台 / 電気自動車: <span id="lbl-stock-car">0</span> 台</p>
-        <p>AIロボット: <span id="lbl-stock-robot">0</span> 台 / ロケット: <span id="lbl-stock-rocket">0</span> 機</p>
+        <h3>📦 倉庫・人員</h3>
+        <p>💼 営業:<span id="ss">1</span> | 🛠️ 技術:<span id="se">0</span> | 🧠 科学:<span id="sc">0</span></p>
+        <p>📱 スマホ:<span id="sp">0</span> | 🚗 EV:<span id="sr">0</span> | 🤖 ロボ:<span id="sb">0</span> | 🚀 ロケ:<span id="sk">0</span></p><br>
+        <button onclick="reset()" style="background:#555;color:#fff;border:none;padding:5px;cursor:pointer;font-size:10px;width:100%;">⚠️ データを初期化</button>
     </div>
-
-    <div class="btn-group">
-        <button class="skip-btn" onclick="nextMonth()">1ヶ月進める</button>
-        <button class="skip-btn" style="background:#db2777;" onclick="skipMonths(6)">6ヶ月スキップ</button>
-        <button class="skip-btn" style="background:#7c3aed;" onclick="skipMonths(12)">12ヶ月スキップ</button>
-        <button class="danger" onclick="resetGame()">データを初期化して再起動</button>
-    </div>
-
-    <h3>📜 経営ログ</h3>
-    <div id="log" class="log-box">システム起動完了。</div>
-</body>
-</html>
+</body></html>
