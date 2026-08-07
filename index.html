@@ -1,5 +1,5 @@
 <!DOCTYPE html><html><head><meta charset="UTF-8"><title>CEO室</title>
-<style>body{background:#121214;color:#e0e0e6;font-family:monospace;padding:15px;}.card{background:#1a1a24;border:1px solid #2d2d3d;padding:12px;margin-bottom:12px;border-radius:5px;}.btn{background:#3b82f6;color:#fff;padding:8px 12px;border:none;cursor:pointer;border-radius:4px;margin:2px;text-decoration:none;display:inline-block;}.next{background:#ef4444;width:100%;font-weight:bold;}.skip{background:#10b981;}</style>
+<style>body{background:#121214;color:#e0e0e6;font-family:monospace;padding:15px;}.card{background:#1a1a24;border:1px solid #2d2d3d;padding:12px;margin-bottom:12px;border-radius:5px;}.btn{background:#3b82f6;color:#fff;padding:8px 12px;border:none;cursor:pointer;border-radius:4px;margin:2px;text-decoration:none;display:inline-block;}.next{background:#ef4444;width:100%;font-weight:bold;margin-bottom:8px;}.skip{background:#10b981;color:#fff;flex:1;font-weight:bold;}</style>
 <script>
 let d;
 function load(){try{d=JSON.parse(localStorage.getItem('corp_game_data'));if(!d||!('tech_car' in d))throw 1;}catch(e){d={cash:2000000,loan:0,deposit:0,sphone:0,scar:0,srobot:0,srocket:0,ssales:1,seng:0,ssci:0,term:1,news:"安定",mult_c:1,mult_t:1,marketing:20,tech_car:!1,tech_robot:!1,tech_rocket:!1};save();}}
@@ -15,7 +15,7 @@ items.forEach(it=>{let s=Math.min(d[it.k],cap);d[it.k]-=s;cap-=s;d.cash+=Math.ro
 d.cash-=(d.sphone*5000+d.scar*50000+d.srobot*150000+d.srocket*500000);
 d.cash-=(150000+d.ssales*150000+d.seng*250000+d.ssci*600000);
 d.cash=d.cash-Math.round(d.loan*.005)+Math.round(d.deposit*.002);d.marketing=Math.max(5,d.marketing-5);
-if(d.cash<0&&d.deposit > 0){let b=Math.min(d.deposit,Math.ceil(Math.abs(d.cash)/1000000)*1000000);d.deposit-=b;d.cash+=b;}
+if(d.cash<0&&d.deposit>0){let b=Math.min(d.deposit,Math.ceil(Math.abs(d.cash)/1000000)*1000000);d.deposit-=b;d.cash+=b;}
 if(d.cash<0){alert("破産しました。");reset();return;}
 if(d.cash>=100000000){alert("1億円達成！クリア！");reset();return;}
 if(d.term>=24){alert("24ヶ月終了。ゲームオーバー");reset();return;}
@@ -27,6 +27,7 @@ let r=Math.random();if(r<.2){d.news="【バブル】ロボロケ1.5倍！";d.mul
     <h2>👔 CEO室 (v3 Micro)</h2>
     <div class="card" style="background:#1e3a8a;">🎯 24ヶ月以内に1億円達成せよ</div>
     <div class="card" style="background:#ffea00;color:#000;">📢 景気: <span id="n">..</span></div>
+    
     <div class="card">
         <a class="btn" href="bank_v2.html" style="background:#3b82f6;">🏦 銀行</a>
         <a class="btn" href="business_v2.html" style="background:#a855f7;">🏭 製造</a>
@@ -34,13 +35,20 @@ let r=Math.random();if(r<.2){d.news="【バブル】ロボロケ1.5倍！";d.mul
         <a class="btn" href="marketing.html" style="background:#ec4899;">📢 広告</a>
         <a class="btn" href="rnd.html" style="background:#06b6d4;">🧠 研究</a>
     </div>
+
     <div class="card">
         <h3>📊 財務諸表</h3>
         <p>期間: <span id="t">1</span> / 24 ヶ月 | 現金: <span id="c" style="color:#00ff66;font-weight:bold;">0</span> 円</p>
         <p>借入: <span id="l">0</span> 円 | 預金: <span id="dp">0</span> 円 | 認知度: <span id="m">20</span> %</p><br>
+        
+        <!-- 💡 確実にボタンが表示されるようにHTMLタグを修正・追加しました -->
         <button class="btn next" onclick="skip(1)">⏭️ 1ヶ月進める（決算）</button>
-        <div style="display:flex;"><button class="btn skip" onclick="skip(3)" style="flex:1;">⏩ 3ヶ月</button><button class="btn skip" onclick="skip(6)" style="flex:1;">⏩ 6ヶ月</button></div>
+        <div style="display:flex; gap:5px;">
+            <button class="btn skip" onclick="skip(3)">⏩ 3ヶ月スキップ</button>
+            <button class="btn skip" onclick="skip(6)">⏩ 6ヶ月スキップ</button>
+        </div>
     </div>
+
     <div class="card">
         <h3>📦 倉庫・人員</h3>
         <p>💼 営業:<span id="ss">1</span> | 🛠️ 技術:<span id="se">0</span> | 🧠 科学:<span id="sc">0</span></p>
